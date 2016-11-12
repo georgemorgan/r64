@@ -1,0 +1,6 @@
+[package]
+name = "r64"
+version = "0.1.0"
+authors = ["George Morgan <george@george-morgan.com>"]
+
+[dependencies]
