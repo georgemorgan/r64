@@ -6,10 +6,14 @@ use std::io::Read;
 /* Use the N64 module. */
 mod n64;
 use n64::N64;
-mod cpu;
-mod pif;
-mod rdp;
+mod vi;
+mod ai;
+mod si;
+mod pi;
 mod rsp;
+mod rdp;
+mod pif;
+mod cpu;
 
 /* 'main()' function; loads N64 ROM and initializes emulator context. */
 fn main() {
