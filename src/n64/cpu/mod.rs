@@ -1,5 +1,7 @@
 /* Exposes datatypes and functionaly of the VR4300 CPU. */
 
+use n64::MC;
+
 /*
 
 CPU0
@@ -110,6 +112,6 @@ impl CPU {
 		/* Increment the program counter. */
 		self.pc += 4;
 		/* Fetch the next instrution from memory. */
-
+		MC::read(self.pc);
 	}
 }

@@ -20,22 +20,9 @@ use self::cpu::CPU;
 
 use std::str;
 
-/* N64 hardware constants. */
-const N64_IRAM_SIZE: usize = 0x400000;
-const N64_ERAM_SIZE: usize = 0x400000;
-
 pub struct N64 {
 
-	/* ~ System memories. ~ */
-
-	/* Virtual representation of the console's 4MB internal RDRAM. */
-	iram: Box<[u8]>,
-	/* Virtual representation of the console's 4MB expansion RDRAM. */
-	eram: Box<[u8]>,
-	/* Virtual representation of the console's cartridge ROM. */
-	crom: Box<[u8]>,
-
-    /* N64 */
+    /* Memory Controller */
     mc: MC,
 
 	/* RCP-NUS */
@@ -63,20 +50,13 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&self) {
-		println!("Starting emulation.");
-		println!("ROM is {} bytes.", self.crom.len());
-		let name = str::from_utf8(&self.crom[0x20..0x20+20]).unwrap().trim();
-		println!("The ROM is '{}'.", name);
+
 	}
 	/* Initializer for the N64 implementation. */
-	pub fn new(r: Box<[u8]>) -> N64 {
+	pub fn new(cr: Box<[u8]>) -> N64 {
 		N64 {
-			iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
-			eram: vec![0; N64_ERAM_SIZE].into_boxed_slice(),
-			crom: r,
-
-            /* N64 */
-            mc: MC::new(),
+            /* Memory Controller */
+            mc: MC::new(cr),
 
             /* RCP-NUS */
 			vi: VI::new(),
