@@ -1,11 +1,19 @@
-use vi::VI;
-use ai::AI;
-use si::SI;
-use pi::PI;
-use rsp::RSP;
-use rdp::RDP;
-use pif::PIF;
-use cpu::CPU;
+mod vi;
+use self::vi::VI;
+mod ai;
+use self::ai::AI;
+mod si;
+use self::si::SI;
+mod pi;
+use self::pi::PI;
+mod rsp;
+use self::rsp::RSP;
+mod rdp;
+use self::rdp::RDP;
+mod pif;
+use self::pif::PIF;
+mod cpu;
+use self::cpu::CPU;
 
 use std::str;
 
