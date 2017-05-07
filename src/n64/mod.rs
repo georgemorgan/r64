@@ -1,3 +1,6 @@
+mod mc;
+use self::mc::MC;
+
 mod vi;
 use self::vi::VI;
 mod ai;
@@ -32,7 +35,10 @@ pub struct N64 {
 	/* Virtual representation of the console's cartridge ROM. */
 	crom: Box<[u8]>,
 
-	/* ~ RCP-NUS ~ */
+    /* N64 */
+    mc: MC,
+
+	/* RCP-NUS */
 
 	/* Virtual VI. (Video Interface) */
 	vi: VI,
@@ -49,7 +55,7 @@ pub struct N64 {
 	/* Virtual PIF. (Peripheral Interface). */
 	pif: PIF,
 
-	/* ~ CPU-NUS ~ */
+	/* CPU-NUS */
 
 	/* Virtual VR4300 MIPS 64-bit CPU. */
 	cpu: CPU,
@@ -68,6 +74,11 @@ impl N64 {
 			iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
 			eram: vec![0; N64_ERAM_SIZE].into_boxed_slice(),
 			crom: r,
+
+            /* N64 */
+            mc: MC::new(),
+
+            /* RCP-NUS */
 			vi: VI::new(),
 			ai: AI::new(),
 			si: SI::new(),
@@ -75,6 +86,8 @@ impl N64 {
 			rsp: RSP::new(),
 			rdp: RDP::new(),
 			pif: PIF::new(),
+
+            /* CPU-NUS */
 			cpu: CPU::new(),
 		}
 	}
