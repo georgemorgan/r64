@@ -22,7 +22,7 @@ use std::str;
 
 pub struct N64 {
 
-    /* Memory Controller */
+    /* MC (Memory Controller) */
     mc: MC,
 
 	/* RCP-NUS */
@@ -49,12 +49,13 @@ pub struct N64 {
 }
 
 impl N64 {
-	pub fn begin(&self) {
-
+	pub fn begin(&mut self) {
+        self.cpu.cycle(&mut self.mc)
 	}
-	/* Initializer for the N64 implementation. */
+	/* Initializer for the N64 umbrella module. */
 	pub fn new(cr: Box<[u8]>) -> N64 {
 		N64 {
+
             /* Memory Controller */
             mc: MC::new(cr),
 

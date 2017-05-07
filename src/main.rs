@@ -19,7 +19,7 @@ fn main() {
 	/* Open the ROM file. */
 	let rom = load_rom(&args[1]);
 	/* Create the N64. */
-	let n64 = N64::new(rom);
+	let mut n64 = N64::new(rom);
 	/* Start emulation. */
 	n64.begin();
 }

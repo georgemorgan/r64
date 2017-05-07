@@ -2,8 +2,6 @@
 
 /* Handles reading from and writing to the console's memory map. */
 
-/* Access to the N64's cartridge memory. */
-use n64::N64;
 /* Access to the N64's PIF memory. */
 use n64::pif;
 
@@ -36,12 +34,13 @@ impl MC {
     }
 
     /* Reads a word from the memory map. */
-    pub fn read(addr: u32) -> u32 {
-        0
+    pub fn read(&self, addr: u32) -> u32 {
+        println!("Reading word from address {:#x}", addr);
+        self.crom[0] as u32
     }
 
     /* Writes a word to the memory map. */
-    pub fn write(val: u32) {
-
+    pub fn write(&mut self, val: u32) {
+        self.iram[0] = val as u8
     }
 }

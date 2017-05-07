@@ -29,6 +29,7 @@ COP0
  */
 
 pub struct CPU {
+
 	/* The CPU's register file. */
     r0: u32,
     at: u32,
@@ -108,10 +109,11 @@ impl CPU {
 		}
 	}
 	/* Executes a single instruction. */
-	pub fn cycle(&mut self) {
+	pub fn cycle(&mut self, mc: &mut MC) {
 		/* Increment the program counter. */
 		self.pc += 4;
 		/* Fetch the next instrution from memory. */
-		MC::read(self.pc);
+		let word = MC::read(mc, self.pc);
+		println!("Cycle. Read word {:#x}", word);
 	}
 }
