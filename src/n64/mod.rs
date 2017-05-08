@@ -23,32 +23,32 @@ mod mc;
 
 #[repr(C, packed)]
 pub struct N64_ROM_HEADER {
-    pub PI_BSD_DOM1: u32,
-    pub clock: u32,
-    pub pc: u32,
-    pub release: u32,
-    pub crc1: u32,
-    pub crc2: u32,
-    pub unknown1: u64,
-    pub name: [u8; 20],
-    pub unknown2: u32,
-    pub format: u32,
-    pub id: u16,
-    pub country: u8,
-    pub version: u8
+	pub PI_BSD_DOM1: u32,
+	pub clock: u32,
+	pub pc: u32,
+	pub release: u32,
+	pub crc1: u32,
+	pub crc2: u32,
+	pub unknown1: u64,
+	pub name: [u8; 20],
+	pub unknown2: u32,
+	pub format: u32,
+	pub id: u16,
+	pub country: u8,
+	pub version: u8
 }
 pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 
 pub struct N64 {
 
-    /* System memories. */
+	/* System memories. */
 
-    /* 4MB internal RDRAM. */
-    iram: Box<[u8]>,
-    /* 4MB expansion RDRAM. */
-    eram: Box<[u8]>,
-    /* Cartridge ROM. */
-    crom: Box<[u8]>,
+	/* 4MB internal RDRAM. */
+	iram: Box<[u8]>,
+	/* 4MB expansion RDRAM. */
+	eram: Box<[u8]>,
+	/* Cartridge ROM. */
+	crom: Box<[u8]>,
 
 	/* RCP-NUS */
 
@@ -75,23 +75,23 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&mut self) {
-        cpu::cycle(self)
+		cpu::cycle(self)
 	}
 	/* Initializer for the N64 umbrella module. */
-    /* > Accepts a cartridge ROM slice (cr) and a PIF ROM slice (pr). */
+	/* > Accepts a cartridge ROM slice (cr) and a PIF ROM slice (pr). */
 	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
 		N64 {
 
-            /* System memories. */
+			/* System memories. */
 
-            /* Allocate the IRAM. */
-            iram: vec![0; mc::N64_IRAM_SIZE].into_boxed_slice(),
-            /* Allocate the ERAM. */
-            eram: vec![0; mc::N64_ERAM_SIZE].into_boxed_slice(),
-            /* Transfer ownership of the CROM. */
-            crom: cr,
+			/* Allocate the IRAM. */
+			iram: vec![0; mc::N64_IRAM_SIZE].into_boxed_slice(),
+			/* Allocate the ERAM. */
+			eram: vec![0; mc::N64_ERAM_SIZE].into_boxed_slice(),
+			/* Transfer ownership of the CROM. */
+			crom: cr,
 
-            /* RCP-NUS */
+			/* RCP-NUS */
 			vi: VI::new(),
 			ai: AI::new(),
 			si: SI::new(),
@@ -100,7 +100,7 @@ impl N64 {
 			rdp: RDP::new(),
 			pif: PIF::new(pr),
 
-            /* CPU-NUS */
+			/* CPU-NUS */
 			cpu: CPU::new(mc::PIF_ROM_START as u32),
 		}
 	}

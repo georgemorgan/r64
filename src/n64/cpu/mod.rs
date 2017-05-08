@@ -35,10 +35,10 @@ const GPR_SIZE: usize = 32;
 pub struct CPU {
 
 	/* The CPU's register file. */
-    gpr: [u32; GPR_SIZE],
+	gpr: [u32; GPR_SIZE],
 
-    /* The program counter. */
-    pc: u32
+	/* The program counter. */
+	pc: u32
 }
 
 impl CPU {
@@ -47,7 +47,7 @@ impl CPU {
 			/* Zero-initialize the general purpose registers. */
 			gpr: [0; GPR_SIZE],
 			/* Initialize the program counter. */
-		    pc: pc
+			pc: pc
 		}
 	}
 }
