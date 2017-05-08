@@ -2,7 +2,7 @@ use n64::mc;
 
 pub struct PIF {
 	/* The PIF's internal RAM. */
-	pram: Box<[u8]>,
+	pub pram: Box<[u8]>,
 	/* The PIF's internal ROM from which the console boots. */
 	pub prom: Box<[u8]>
 }

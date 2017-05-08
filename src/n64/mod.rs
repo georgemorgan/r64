@@ -2,8 +2,6 @@
 
 /* A top-level module that concatenates the sub-modules of the emulator. */
 
-mod mc;
-
 mod vi;
 use self::vi::VI;
 mod ai;
@@ -21,7 +19,7 @@ use self::pif::PIF;
 mod cpu;
 use self::cpu::CPU;
 
-use std::str;
+mod mc;
 
 #[repr(C, packed)]
 pub struct N64_ROM_HEADER {
@@ -80,6 +78,7 @@ impl N64 {
         cpu::cycle(self)
 	}
 	/* Initializer for the N64 umbrella module. */
+    /* > Accepts a cartridge ROM slice (cr) and a PIF ROM slice (pr). */
 	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
 		N64 {
 
