@@ -74,11 +74,11 @@ const CART_DOM2_A2_END: usize = 0x0FFF_FFFF;
 const CART_DOM1_A2_START: usize = 0x1000_0000;
 const CART_DOM1_A2_END: usize = 0x1FBF_FFFF;
 
-const PIF_ROM_START: usize = 0x1FC0_0000;
+pub const PIF_ROM_START: usize = 0x1FC0_0000;
 const PIF_ROM_END: usize = 0x1FC0_07BF;
 
-const PIF_RAM_START: usize = 0x1FC0_07C0;
-const PIF_RAM_END: usize = 0x1FC0_07FF;
+pub const PIF_RAM_START: usize = 0x1FC0_07C0;
+pub const PIF_RAM_END: usize = 0x1FC0_07FF;
 
 const RESERVED_START: usize = 0x1FC0_0800;
 const RESERVED_END: usize = 0x1FCF_FFFF;
@@ -89,76 +89,52 @@ const CART_DOM1_A3_END: usize = 0x7FFF_FFFF;
 const SYSAD_START: usize = 0x8000_0000;
 const SYSAD_END: usize = 0xFFFF_FFFF;
 
-/* Access to the N64's PIF memory. */
-use n64::pif;
+/* Access to the N64's memories. */
+use n64::N64;
 
 /* N64 hardware constants. */
-const N64_IRAM_SIZE: usize = 0x400000;
-const N64_ERAM_SIZE: usize = 0x400000;
+pub const N64_IRAM_SIZE: usize = 0x400000;
+pub const N64_ERAM_SIZE: usize = 0x400000;
 
-pub struct MC {
-    /* ~ System memories. ~ */
+/* Reads a word from the provided N64's memory map. */
+pub fn read(n64: &N64, addr: usize) -> u32 {
+    println!("Reading word from physical address 0x{:08x}", addr);
 
-	/* 4MB internal RDRAM. */
-	iram: Box<[u8]>,
-	/* 4MB expansion RDRAM. */
-	eram: Box<[u8]>,
-	/* Cartridge ROM. */
-	crom: Box<[u8]>
+    match addr {
+        RDRAM_MEM_START ... RDRAM_MEM_END       => 0,
+        RDRAM_REG_START ... RDRAM_REG_END       => 0,
+        SP_REG_START ... SP_REG_END             => 0,
+        DP_CMD_START ... DP_CMD_END             => 0,
+        DP_SPAN_START ... DP_SPAN_END           => 0,
+        MI_REG_START ... MI_REG_END             => 0,
+        VI_REG_START ... VI_REG_END             => 0,
+        AI_REG_START ... AI_REG_END             => 0,
+        PI_REG_START ... PI_REG_END             => 0,
+        RI_REG_START ... RI_REG_END             => 0,
+        SI_REG_START ... SI_REG_END             => 0,
+        UNUSED_START ... UNUSED_END             => 0,
+        CART_DOM2_A1_START ... CART_DOM2_A1_END =>
+            read32(addr - CART_DOM2_A1_START, &n64.crom),
+        CART_DOM1_A1_START ... CART_DOM1_A1_END =>
+            read32(addr - CART_DOM1_A1_START, &n64.crom),
+        CART_DOM2_A2_START ... CART_DOM2_A2_END =>
+            read32(addr - CART_DOM2_A2_START, &n64.crom),
+        CART_DOM1_A2_START ... CART_DOM1_A2_END =>
+            read32(addr - CART_DOM1_A2_START, &n64.crom),
+        PIF_ROM_START ... PIF_ROM_END           =>
+            read32(addr - PIF_ROM_START, &n64.pif.prom),
+        PIF_RAM_START ... PIF_RAM_END           => 0,
+        RESERVED_START ... RESERVED_END         => 0,
+        CART_DOM1_A3_START ... CART_DOM1_A3_END =>
+            read32(addr - CART_DOM1_A3_START, &n64.crom),
+        SYSAD_START ... SYSAD_END               => 0,
+        _ => panic!("Unrecognized physical address: {:#x}", addr)
+    }
 }
 
-impl MC {
-
-    pub fn new(cr: Box<[u8]>) -> MC {
-        MC {
-            /* Allocate the IRAM. */
-            iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
-            /* Allocate the ERAM. */
-            eram: vec![0; N64_ERAM_SIZE].into_boxed_slice(),
-            /* Transfer ownership of the CROM. */
-            crom: cr,
-        }
-    }
-
-    /* Reads a word from the memory map. */
-    pub fn read(&self, addr: usize) -> u32 {
-        println!("Reading word from physical address {:#x}", addr);
-
-		match addr {
-			RDRAM_MEM_START ... RDRAM_MEM_END       => 0,
-			RDRAM_REG_START ... RDRAM_REG_END       => 0,
-			SP_REG_START ... SP_REG_END             => 0,
-			DP_CMD_START ... DP_CMD_END             => 0,
-			DP_SPAN_START ... DP_SPAN_END           => 0,
-			MI_REG_START ... MI_REG_END             => 0,
-			VI_REG_START ... VI_REG_END             => 0,
-			AI_REG_START ... AI_REG_END             => 0,
-			PI_REG_START ... PI_REG_END             => 0,
-			RI_REG_START ... RI_REG_END             => 0,
-			SI_REG_START ... SI_REG_END             => 0,
-			UNUSED_START ... UNUSED_END             => 0,
-			CART_DOM2_A1_START ... CART_DOM2_A1_END =>
-				read32(addr - CART_DOM2_A1_START, &self.crom),
-			CART_DOM1_A1_START ... CART_DOM1_A1_END =>
-				read32(addr - CART_DOM1_A1_START, &self.crom),
-			CART_DOM2_A2_START ... CART_DOM2_A2_END =>
-				read32(addr - CART_DOM2_A2_START, &self.crom),
-			CART_DOM1_A2_START ... CART_DOM1_A2_END =>
-				read32(addr - CART_DOM1_A2_START, &self.crom),
-			PIF_ROM_START ... PIF_ROM_END           => 0,
-			PIF_RAM_START ... PIF_RAM_END           => 0,
-			RESERVED_START ... RESERVED_END         => 0,
-			CART_DOM1_A3_START ... CART_DOM1_A3_END =>
-				read32(addr - CART_DOM1_A3_START, &self.crom),
-			SYSAD_START ... SYSAD_END               => 0,
-			_ => panic!("Unrecognized physical address: {:#x}", addr)
-		}
-    }
-
-    /* Writes a word to the memory map. */
-    pub fn write(&mut self, val: u32) {
-        self.iram[0] = val as u8
-    }
+/* Writes a word to the provided N64's memory map. */
+pub fn write(n64: &mut N64, val: u32) {
+    n64.iram[0] = val as u8;
 }
 
 fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
@@ -166,5 +142,7 @@ fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
 	/* Obtain a slice starting at the read address. */
 	let b: &[u8] = &mem[addr .. addr + 4];
 	/* Extract each of the word's bytes and use them to create a u32. */
-	(((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | (b[3] as u32))
+	let w = (((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | (b[3] as u32));
+    /* Byte swap and adjust the endianness of the read word. */
+    w.swap_bytes()
 }

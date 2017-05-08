@@ -1,7 +1,5 @@
 /* Exposes datatypes and functionaly of the VR4300 CPU. */
 
-use n64::MC;
-
 /*
 
 CPU0
@@ -27,6 +25,9 @@ COP0
   07h = *RESERVED*  0Fh = PRevID      17h = *RESERVED*  1Fh = *RESERVED*
 
  */
+
+ use n64::N64;
+ use n64::mc;
 
 pub struct CPU {
 
@@ -108,14 +109,15 @@ impl CPU {
 		    pc: pc
 		}
 	}
-	/* Executes a single instruction. */
-	pub fn cycle(&mut self, mc: &mut MC) {
-		/* Fetch the next instrution from memory. */
-		let word = MC::read(mc, self.pc as usize);
-        /* Execute the instrution. */
+}
 
-        /* Increment the program counter. */
-        self.pc += 4;
-		println!("Cycle. Read word {:#x}", word);
-	}
+/* Executes a single instruction on the given N64. */
+pub fn cycle(n64: &mut N64) {
+	/* Fetch the next instrution from memory. */
+	let word = mc::read(n64, n64.cpu.pc as usize);
+	/* Execute the instrution. */
+
+	/* Increment the program counter. */
+	n64.cpu.pc += 4;
+	println!("Cycle. Read word {:#x}", word);
 }

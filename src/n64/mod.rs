@@ -3,7 +3,6 @@
 /* A top-level module that concatenates the sub-modules of the emulator. */
 
 mod mc;
-use self::mc::MC;
 
 mod vi;
 use self::vi::VI;
@@ -44,8 +43,14 @@ pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 
 pub struct N64 {
 
-    /* MC (Memory Controller) */
-    mc: MC,
+    /* System memories. */
+
+    /* 4MB internal RDRAM. */
+    iram: Box<[u8]>,
+    /* 4MB expansion RDRAM. */
+    eram: Box<[u8]>,
+    /* Cartridge ROM. */
+    crom: Box<[u8]>,
 
 	/* RCP-NUS */
 
@@ -72,14 +77,20 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&mut self) {
-        self.cpu.cycle(&mut self.mc)
+        cpu::cycle(self)
 	}
 	/* Initializer for the N64 umbrella module. */
-	pub fn new(cr: Box<[u8]>, header: &N64_ROM_HEADER) -> N64 {
+	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
 		N64 {
 
-            /* Memory Controller */
-            mc: MC::new(cr),
+            /* System memories. */
+
+            /* Allocate the IRAM. */
+            iram: vec![0; mc::N64_IRAM_SIZE].into_boxed_slice(),
+            /* Allocate the ERAM. */
+            eram: vec![0; mc::N64_ERAM_SIZE].into_boxed_slice(),
+            /* Transfer ownership of the CROM. */
+            crom: cr,
 
             /* RCP-NUS */
 			vi: VI::new(),
@@ -88,10 +99,10 @@ impl N64 {
 			pi: PI::new(),
 			rsp: RSP::new(),
 			rdp: RDP::new(),
-			pif: PIF::new(),
+			pif: PIF::new(pr),
 
             /* CPU-NUS */
-			cpu: CPU::new(header.pc),
+			cpu: CPU::new(mc::PIF_ROM_START as u32),
 		}
 	}
 }
