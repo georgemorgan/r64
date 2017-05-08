@@ -69,7 +69,7 @@ pub struct CPU {
 }
 
 impl CPU {
-	pub fn new() -> CPU {
+	pub fn new(pc: u32) -> CPU {
 		CPU {
 			/* Zero-initialize the registers. */
 		    r0: 0,
@@ -105,15 +105,17 @@ impl CPU {
 		    s8: 0,
 		    ra: 0,
 			/* Initialize the program counter. */
-		    pc: 0
+		    pc: pc
 		}
 	}
 	/* Executes a single instruction. */
 	pub fn cycle(&mut self, mc: &mut MC) {
-		/* Increment the program counter. */
-		self.pc += 4;
 		/* Fetch the next instrution from memory. */
-		let word = MC::read(mc, self.pc);
+		let word = MC::read(mc, self.pc as usize);
+        /* Execute the instrution. */
+
+        /* Increment the program counter. */
+        self.pc += 4;
 		println!("Cycle. Read word {:#x}", word);
 	}
 }

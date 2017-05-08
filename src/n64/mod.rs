@@ -1,3 +1,7 @@
+/* n64.rs - Umbrella Module */
+
+/* A top-level module that concatenates the sub-modules of the emulator. */
+
 mod mc;
 use self::mc::MC;
 
@@ -19,6 +23,24 @@ mod cpu;
 use self::cpu::CPU;
 
 use std::str;
+
+#[repr(C, packed)]
+pub struct N64_ROM_HEADER {
+    pub PI_BSD_DOM1: u32,
+    pub clock: u32,
+    pub pc: u32,
+    pub release: u32,
+    pub crc1: u32,
+    pub crc2: u32,
+    pub unknown1: u64,
+    pub name: [u8; 20],
+    pub unknown2: u32,
+    pub format: u32,
+    pub id: u16,
+    pub country: u8,
+    pub version: u8
+}
+pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 
 pub struct N64 {
 
@@ -53,7 +75,7 @@ impl N64 {
         self.cpu.cycle(&mut self.mc)
 	}
 	/* Initializer for the N64 umbrella module. */
-	pub fn new(cr: Box<[u8]>) -> N64 {
+	pub fn new(cr: Box<[u8]>, header: &N64_ROM_HEADER) -> N64 {
 		N64 {
 
             /* Memory Controller */
@@ -69,7 +91,7 @@ impl N64 {
 			pif: PIF::new(),
 
             /* CPU-NUS */
-			cpu: CPU::new(),
+			cpu: CPU::new(header.pc),
 		}
 	}
 }
