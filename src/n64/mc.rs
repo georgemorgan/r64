@@ -104,7 +104,7 @@ fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
 	/* Obtain a slice starting at the read address. */
 	let b: &[u8] = &mem[addr .. addr + 4];
 	/* Extract each of the word's bytes and use them to create a u32. */
-	let w = (((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | (b[3] as u32));
+	let w = ((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | b[3] as u32;
     /* Byte swap and adjust the endianness of the read word. */
     u32::from_be(w.swap_bytes())
 }
@@ -147,19 +147,23 @@ pub fn read(n64: &N64, addr: usize) -> u32 {
     }
 }
 
-fn write32(addr: usize, val: u32, mem: &Box<[u8]>) {
+use std::io::Write;
+
+fn write32(val: u32, addr: usize, mem: &mut Box<[u8]>) {
 	println!("Writing word to relative address {:#x}", addr);
-	/* Obtain a slice of bytes of the u32. */
-	let b: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
+	/* Obtain a slice of bytes from the u32. */
+    let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
+    /* Write the slice into memory. */
+    mem[addr .. addr + 4].copy_from_slice(from);
 }
 
 /* Writes a word to the provided N64's memory map. */
-pub fn write(n64: &mut N64, addr: usize, val: u32) {
+pub fn write(n64: &mut N64, val: u32, addr: usize) {
     println!("Reading word from physical address 0x{:08x}", addr);
     /* Match the memory address to a peripheral address range. */
     match addr {
         RDRAM_MEM_START ... RDRAM_MEM_END       =>
-            write32(addr - RDRAM_MEM_START, val, &n64.iram),
+            write32(val, addr - RDRAM_MEM_START, &mut n64.iram),
         RDRAM_REG_START ... RDRAM_REG_END       =>
             return,
         SP_REG_START ... SP_REG_END             =>
@@ -183,21 +187,21 @@ pub fn write(n64: &mut N64, addr: usize, val: u32) {
         UNUSED_START ... UNUSED_END             =>
             return,
         CART_DOM2_A1_START ... CART_DOM2_A1_END =>
-            write32(addr - CART_DOM2_A1_START, val, &n64.crom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         CART_DOM1_A1_START ... CART_DOM1_A1_END =>
-            write32(addr - CART_DOM1_A1_START, val, &n64.crom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         CART_DOM2_A2_START ... CART_DOM2_A2_END =>
-            write32(addr - CART_DOM2_A2_START, val, &n64.crom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         CART_DOM1_A2_START ... CART_DOM1_A2_END =>
-            write32(addr - CART_DOM1_A2_START, val, &n64.crom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         PIF_ROM_START ... PIF_ROM_END           =>
-            write32(addr - PIF_ROM_START, val, &n64.pif.prom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         PIF_RAM_START ... PIF_RAM_END           =>
-            write32(addr - PIF_RAM_START, val, &n64.pif.pram),
+            write32(val, addr - PIF_RAM_START, &mut n64.pif.pram),
         RESERVED_START ... RESERVED_END         =>
             return,
         CART_DOM1_A3_START ... CART_DOM1_A3_END =>
-            write32(addr - CART_DOM1_A3_START, val, &n64.crom),
+            panic!("Attempt to write to a read-only location {:#x}.", addr),
         SYSAD_START ... SYSAD_END               =>
             return,
         _ => panic!("Unrecognized physical address: {:#x}", addr)
