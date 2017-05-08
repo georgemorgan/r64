@@ -52,13 +52,52 @@ impl CPU {
 	}
 }
 
+struct Inst(pub u32);
+
+impl Inst {
+	/* Returns the instruction's opcode. */
+	pub fn op(&self) -> u8{
+		((self.0 >> 26) & 0b111111) as u8
+	}
+	/* Returns the instruction's source register. */
+	pub fn rs(&self) -> u8{
+		((self.0 >> 21) & 0b11111) as u8
+	}
+	/* Returns the instruction's target register. */
+	pub fn rt(&self) -> u8 {
+		((self.0 >> 16) & 0b11111) as u8
+	}
+	/* Returns the instruciton's destination register. */
+	pub fn rd(&self) -> u8 {
+		((self.0 >> 11) & 0b11111) as u8
+	}
+	/* Returns the instruction's shift amount. */
+	pub fn sa(&self) -> u8 {
+		((self.0 >> 6) & 0b11111) as u8
+	}
+	/* Returns the instruction's immediate value. */
+	pub fn imm(&self) -> u32 {
+		self.0 & 0xffff
+	}
+	/* Return's the function's funct field. */
+	pub fn funct(&self) -> u8 {
+		0
+	}
+	/* Return's the instruction's target field. */
+	pub fn target(&self) -> u32 {
+		0
+	}
+}
+
 /* Executes a single instruction on the given N64. */
 pub fn cycle(n64: &mut N64) {
 	/* Fetch the next instrution from memory. */
-	let inst = mc::read(n64, n64.cpu.pc as usize);
-	println!("Cycle. Read raw instruction {:#x}.", inst);
+	let inst = Inst(mc::read(n64, n64.cpu.pc as usize));
+	println!("Cycle. Read raw instruction {:#x}.", inst.0);
 	/* Execute the instrution. */
-
+	match inst.op() {
+		_ => return
+	}
 	/* Increment the program counter. */
 	n64.cpu.pc += 4;
 }
