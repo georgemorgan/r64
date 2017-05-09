@@ -75,7 +75,7 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&mut self) {
-		for x in 0 .. 10 {
+		for x in 0 .. 100 {
 			cpu::cycle(self)
 		}
 	}
@@ -103,7 +103,7 @@ impl N64 {
 			pif: PIF::new(pr),
 
 			/* CPU-NUS */
-			cpu: CPU::new(mc::PIF_ROM_START as u32),
+			cpu: CPU::new(mc::PIF_ROM_START as u64),
 		}
 	}
 }
