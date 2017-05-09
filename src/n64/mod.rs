@@ -75,7 +75,9 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&mut self) {
-		cpu::cycle(self)
+		for x in 0 .. 10 {
+			cpu::cycle(self)
+		}
 	}
 	/* Initializer for the N64 umbrella module. */
 	/* > Accepts a cartridge ROM slice (cr) and a PIF ROM slice (pr). */

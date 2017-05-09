@@ -100,7 +100,6 @@ const SYSAD_START: usize = 0x8000_0000;
 const SYSAD_END: usize = 0xFFFF_FFFF;
 
 fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
-	println!("Reading word from relative address {:#x}", addr);
 	/* Obtain a slice starting at the read address. */
 	let b: &[u8] = &mem[addr .. addr + 4];
 	/* Extract each of the word's bytes and use them to create a u32. */
@@ -111,7 +110,6 @@ fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
 
 /* Reads a word from the provided N64's memory map. */
 pub fn read(n64: &N64, addr: usize) -> u32 {
-	println!("Reading word from physical address 0x{:08x}", addr);
 	/* Match the memory address to a peripheral address range. */
 	match addr {
 		RDRAM_MEM_START ... RDRAM_MEM_END       =>
@@ -150,7 +148,6 @@ pub fn read(n64: &N64, addr: usize) -> u32 {
 use std::io::Write;
 
 fn write32(val: u32, addr: usize, mem: &mut Box<[u8]>) {
-	println!("Writing word to relative address {:#x}", addr);
 	/* Obtain a slice of bytes from the u32. */
 	let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
 	/* Write the slice into memory. */
@@ -159,7 +156,6 @@ fn write32(val: u32, addr: usize, mem: &mut Box<[u8]>) {
 
 /* Writes a word to the provided N64's memory map. */
 pub fn write(n64: &mut N64, val: u32, addr: usize) {
-	println!("Reading word from physical address 0x{:08x}", addr);
 	/* Match the memory address to a peripheral address range. */
 	match addr {
 		RDRAM_MEM_START ... RDRAM_MEM_END       =>
