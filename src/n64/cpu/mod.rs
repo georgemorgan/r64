@@ -89,6 +89,77 @@ impl Inst {
 	}
 }
 
+/* Valid VR4300 opcodes. Figure 16-1 in NEC VR4300. */
+enum Op {
+	special,	regimm,		j,			jal,		beq,		bne,		blez,		bgtz,
+	addi,		addiu,		slti,		sltiu,		andi,		ori,		xori,		lui,
+	cop0,		cop1,		cop2,		/**/		beql,		bnel,		blezl,		bgtzl,
+	daddi,		daddiu,		ldl,		ldr,		/**/		/**/		/**/		/**/
+	lb,			lh,			lwl,		lw,			lbu,		lhu,		lwr,		lwu,
+	sb,			sh,			swl,		sw,			sdl,		sdr,		swr,		cache,
+	ll,			lwc1,		lwc2,		/**/		lld,		ldc1,		ldc2,		ld,
+	sc,			swc1,		swc2,		/**/		scd,		sdc1,		sdc2,		sd,
+
+	reserved
+}
+
+/* A constant 2-d array of the opcode values. */
+static OpTable: [[Op; 8]; 8] = [
+	[ Op::special,	Op::regimm,		Op::j,			Op::jal,		Op::beq,		Op::bne,		Op::blez,		Op::bgtz	 ],
+	[ Op::addi,		Op::addiu,		Op::slti,		Op::sltiu,		Op::andi,		Op::ori,		Op::xori,		Op::lui		 ],
+	[ Op::cop0,		Op::cop1,		Op::cop2,		Op::reserved,	Op::beql,		Op::bnel,		Op::blezl,		Op::bgtzl	 ],
+	[ Op::daddi,	Op::daddiu,		Op::ldl,		Op::ldr,		Op::reserved,	Op::reserved,	Op::reserved,	Op::reserved ],
+	[ Op::lb,		Op::lh,			Op::lwl,		Op::lw,			Op::lbu,		Op::lhu,		Op::lwr,		Op::lwu		 ],
+	[ Op::sb,		Op::sh,			Op::swl,		Op::sw,			Op::sdl,		Op::sdr,		Op::swr,		Op::cache	 ],
+	[ Op::ll,		Op::lwc1,		Op::lwc2,		Op::reserved,	Op::lld,		Op::ldc1,		Op::ldc2,		Op::ld		 ],
+	[ Op::sc,		Op::swc1,		Op::swc2,		Op::reserved,	Op::scd,		Op::sdc1,		Op::sdc2,		Op::sd		 ],
+];
+
+/* Special operations. */
+enum SpOp {
+	sll,		/**/		srl,		sra,		sllv,		/**/		srlv,		srav,
+	jr,			jalr,		/**/		/**/		syscall,	brk,		/**/		sync,
+	mfhi,		mthi,		mflo,		mtlo,		dsllv,		/**/		dsrlv,		dsrav,
+	mult,		multu,		div,		divu,		dmult,		dmultu,		ddiv,		ddivu,
+	add,		addu,		sub,		subu,		and,		or,			xor,		nor,
+	/**/		/**/		slt,		sltu,		dadd,		daddu,		dsub,		dsubu,
+	tge,		tgeu,		tlt,		tltu,		teq,		/**/		tne,		/**/
+	dsll,		/**/		dsrl,		dsra,		dsll32,		/**/		dsrl32,		dsra32,
+
+	reserved
+}
+
+/* A constant 2-d array of the special function values. */
+static SpOpTable: [[SpOp; 8]; 8] = [
+	[ SpOp::sll,		SpOp::reserved,		SpOp::srl,			SpOp::sra,			SpOp::sllv,			SpOp::reserved,			SpOp::srlv,			SpOp::srav	 	],
+	[ SpOp::jr,			SpOp::jalr,			SpOp::reserved,		SpOp::reserved,		SpOp::syscall,		SpOp::brk,				SpOp::reserved,		SpOp::sync	 	],
+	[ SpOp::mfhi,		SpOp::mthi,			SpOp::mflo,			SpOp::mtlo,			SpOp::dsllv,		SpOp::reserved,			SpOp::dsrlv,		SpOp::dsrav	 	],
+	[ SpOp::mult,		SpOp::multu,		SpOp::	div,		SpOp::divu,			SpOp::dmult,		SpOp::dmultu,			SpOp::ddiv,			SpOp::ddivu	 	],
+	[ SpOp::add,		SpOp::addu,			SpOp::sub,			SpOp::subu,			SpOp::and,			SpOp::or,				SpOp::xor,			SpOp::nor	 	],
+	[ SpOp::reserved,	SpOp::reserved,		SpOp::slt,			SpOp::sltu,			SpOp::dadd,			SpOp::daddu,			SpOp::dsub,			SpOp::dsubu	 	],
+	[ SpOp::tge,		SpOp::tgeu,			SpOp::tlt,			SpOp::tltu,			SpOp::teq,			SpOp::reserved,			SpOp::tne,			SpOp::reserved	],
+	[ SpOp::dsll,		SpOp::reserved,		SpOp::dsrl,			SpOp::dsra,			SpOp::dsll32,		SpOp::reserved,			SpOp::dsrl32,		SpOp::dsra32 	],
+];
+
+/* Register-Immediate operations */
+enum RiOp {
+	bltz,		bgez,		bltzl,		bgezl,		/**/		/**/		/**/		/**/
+	tgei,		tgeiu,		tlti,		tltiu,		teqi,		/**/		tnei,		/**/
+	bltzal,		bgezal,		bltzall,	bgezall,	/**/		/**/		/**/		/**/
+	/**/		/**/		/**/		/**/		/**/		/**/		/**/		/**/
+
+	reserved
+}
+
+/* A constant 2-d array of the register-immediate rt values. */
+static RiOpTable: [[RiOp; 8]; 4] = [
+	[ RiOp::bltz,		RiOp::bgez,			RiOp::bltzl,		RiOp::bgezl,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved, ],
+	[ RiOp::tgei,		RiOp::tgeiu,		RiOp::tlti,			RiOp::tltiu,		RiOp::teqi,			RiOp::reserved,		RiOp::tnei,			RiOp::reserved, ],
+	[ RiOp::bltzal,		RiOp::bgezal,		RiOp::bltzall,		RiOp::bgezall,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved, ],
+	[ RiOp::reserved,	RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved,		RiOp::reserved, ],
+];
+
+
 /* Executes a single instruction on the given N64. */
 pub fn cycle(n64: &mut N64) {
 	/* Fetch the next instrution from memory. */
@@ -96,6 +167,7 @@ pub fn cycle(n64: &mut N64) {
 	println!("Cycle. Read raw instruction {:#x}.", inst.0);
 	/* Execute the instrution. */
 	match inst.op() {
+
 		_ => return
 	}
 	/* Increment the program counter. */
