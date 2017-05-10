@@ -132,50 +132,50 @@ const OP_TABLE: [[OpTup; 8]; 8] = [
 	 (Op::Blezl,    "blezl",    OpC::J, &|_, _, _| 0),
 	 (Op::Bgtzl,    "bgtzl",    OpC::J, &|_, _, _| 0)],
 
-	[(Op::Daddi,    "daddi",    OpC::I, &|_, _, _| 0),
-	 (Op::Daddiu,   "daddiu",   OpC::I, &|_, _, _| 0),
-	 (Op::Ldl,      "ldl",      OpC::I, &|_, _, _| 0),
-	 (Op::Ldr,      "ldr",      OpC::I, &|_, _, _| 0),
+	[(Op::Daddi,    "daddi",    OpC::I, &|_, rs, imm| 0),
+	 (Op::Daddiu,   "daddiu",   OpC::I, &|_, rs, imm| 0),
+	 (Op::Ldl,      "ldl",      OpC::L, &|val, _, _| 0),
+	 (Op::Ldr,      "ldr",      OpC::L, &|val, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
 
-	[(Op::Lb,       "lb",       OpC::L, &|val, _, _| 0),
-	 (Op::Lh,       "lh",       OpC::L, &|val, _, _| 0),
+	[(Op::Lb,       "lb",       OpC::L, &|val, _, _| (val & 0xff) as i8 as i64 as u64),
+	 (Op::Lh,       "lh",       OpC::L, &|val, _, _| (val & 0xffff) as i16 as i64 as u64),
 	 (Op::Lwl,      "lwl",      OpC::L, &|val, _, _| 0),
-	 (Op::Lw,       "lw",       OpC::L, &|val, _, _| 0),
-	 (Op::Lbu,      "lbu",      OpC::L, &|val, _, _| 0),
-	 (Op::Lhu,      "lhu",      OpC::L, &|val, _, _| 0),
+	 (Op::Lw,       "lw",       OpC::L, &|val, _, _| val as i32 as i64 as u64),
+	 (Op::Lbu,      "lbu",      OpC::L, &|val, _, _| (val & 0xff) as u8 as u64),
+	 (Op::Lhu,      "lhu",      OpC::L, &|val, _, _| (val & 0xffff) as u16 as u64),
 	 (Op::Lwr,      "lwr",      OpC::L, &|val, _, _| 0),
-	 (Op::Lwu,      "lwu",      OpC::L, &|val, _, _| 0)],
+	 (Op::Lwu,      "lwu",      OpC::L, &|val, _, _| val as u32 as u64)],
 
-	[(Op::Sb,       "sb",       OpC::S, &|_, _, _| 0),
-	 (Op::Sh,       "sh",       OpC::S, &|_, _, _| 0),
-	 (Op::Swl,      "swl",      OpC::S, &|_, _, _| 0),
-	 (Op::Sw,       "sw",       OpC::S, &|_, _, _| 0),
-	 (Op::Sdl,      "sdl",      OpC::S, &|_, _, _| 0),
-	 (Op::Sdr,      "sdr",      OpC::S, &|_, _, _| 0),
-	 (Op::Swr,      "swr",      OpC::S, &|_, _, _| 0),
+	[(Op::Sb,       "sb",       OpC::S, &|rt, _, _| 0),
+	 (Op::Sh,       "sh",       OpC::S, &|rt, _, _| 0),
+	 (Op::Swl,      "swl",      OpC::S, &|rt, _, _| 0),
+	 (Op::Sw,       "sw",       OpC::S, &|rt, _, _| 0),
+	 (Op::Sdl,      "sdl",      OpC::S, &|rt, _, _| 0),
+	 (Op::Sdr,      "sdr",      OpC::S, &|rt, _, _| 0),
+	 (Op::Swr,      "swr",      OpC::S, &|rt, _, _| 0),
 	 (Op::Cache,    "cache",    OpC::I, &|_, _, _| 0)],
 
-	[(Op::Ll,       "ll",       OpC::L, &|_, _, _| 0),
-	 (Op::Lwc1,     "lwc1",     OpC::L, &|_, _, _| 0),
-	 (Op::Lwc2,     "lwc2",     OpC::L, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
-	 (Op::Lld,      "lld",      OpC::L, &|_, _, _| 0),
-	 (Op::Ldc1,     "ldc1",     OpC::L, &|_, _, _| 0),
-	 (Op::Ldc2,     "ldc2",     OpC::L, &|_, _, _| 0),
-	 (Op::Ld,       "ld",       OpC::L, &|_, _, _| 0)],
+	[(Op::Ll,       "ll",       OpC::L, &|val, _, _| 0),
+	 (Op::Lwc1,     "lwc1",     OpC::L, &|val, _, _| 0),
+	 (Op::Lwc2,     "lwc2",     OpC::L, &|val, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|val, _, _| 0),
+	 (Op::Lld,      "lld",      OpC::L, &|val, _, _| 0),
+	 (Op::Ldc1,     "ldc1",     OpC::L, &|val, _, _| 0),
+	 (Op::Ldc2,     "ldc2",     OpC::L, &|val, _, _| 0),
+	 (Op::Ld,       "ld",       OpC::L, &|val, _, _| 0)],
 
-	[(Op::Sc,       "sc",       OpC::S, &|_, _, _| 0),
-	 (Op::Swc1,     "swc1",     OpC::S, &|_, _, _| 0),
-	 (Op::Swc2,     "swc2",     OpC::S, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
-	 (Op::Scd,      "scd",      OpC::S, &|_, _, _| 0),
-	 (Op::Sdc1,     "sdc1",     OpC::S, &|_, _, _| 0),
-	 (Op::Sdc2,     "sdc2",     OpC::S, &|_, _, _| 0),
-	 (Op::Sd,       "sd",       OpC::S, &|_, _, _| 0)],
+	[(Op::Sc,       "sc",       OpC::S, &|rt, _, _| 0),
+	 (Op::Swc1,     "swc1",     OpC::S, &|rt, _, _| 0),
+	 (Op::Swc2,     "swc2",     OpC::S, &|rt, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|rt, _, _| 0),
+	 (Op::Scd,      "scd",      OpC::S, &|rt, _, _| 0),
+	 (Op::Sdc1,     "sdc1",     OpC::S, &|rt, _, _| 0),
+	 (Op::Sdc2,     "sdc2",     OpC::S, &|rt, _, _| 0),
+	 (Op::Sd,       "sd",       OpC::S, &|rt, _, _| 0)],
 ];
 
 /* A constant 2-d array of the opcode values. */
@@ -445,8 +445,10 @@ impl fmt::Display for Inst {
 const GPR_SIZE: usize = 32;
 
 pub struct CPU {
-	/* The CPU's register file. */
+	/* The CPU's general purpose register file. */
 	gpr: [u64; GPR_SIZE],
+	/* The CPU's floating point register file. */
+	fpr: [f64; GPR_SIZE],
 	/* The program counter. */
 	pc: u64
 }
@@ -454,8 +456,9 @@ pub struct CPU {
 impl CPU {
 	pub fn new(pc: u64) -> CPU {
 		CPU {
-			/* Zero-initialize the general purpose registers. */
+			/* Zero-initialize the registers. */
 			gpr: [0; GPR_SIZE],
+			fpr: [0.0; GPR_SIZE],
 			/* Initialize the program counter. */
 			pc: pc
 		}
@@ -464,9 +467,17 @@ impl CPU {
 	fn rgpr(&self, reg: usize) -> u64 {
 		self.gpr[reg]
 	}
+	/* Reads a value from the specified FPR. */
+	fn rfpr(&self, reg: usize) -> f64 {
+		self.fpr[reg]
+	}
 	/* Writes a value to the specified GPR. */
 	fn wgpr(&mut self, val: u64, reg: usize) {
 		self.gpr[reg] = val;
+	}
+	/* Writes a value to the specified FPR. */
+	fn wfpr(&mut self, val: f64, reg: usize) {
+		self.fpr[reg] = val;
 	}
 
 	/* Handlers for the 3 instruction formats. - Chapter 3.1 in NEC VR4300 manual. */
@@ -490,12 +501,22 @@ impl CPU {
 		let offset = i.offset();
 		/* Are we loading or storing? */
 		match i.class() {
-			OpC::L =>
-				(),
-			OpC::S =>
-				(),
-			_ =>
-				()
+			OpC::L => {
+				let val = mc.read((base + offset as u64) as usize) as u64;
+				/* Let the instruction's function determine the value we write. */
+				let rt = i.function()(val, 0, 0);
+				/* Write the result back into the target register. */
+				self.wgpr(rt, i.rt());
+			},
+			OpC::S => {
+				/* Obtain the value to be stored. */
+				let rt = self.rgpr(i.rt());
+				/* Let the function mutate this value as needed. */
+				let val = i.function()(rt, 0, 0) as u32;
+				/* Write the result into memory. */
+				mc.write(val, (base + offset as u64) as usize);
+			},
+			_ => ()
 		}
 	}
 	/* Handler for the jump (J-Type) instructions. */
@@ -533,8 +554,51 @@ impl CPU {
 					self.exec_reg(i),
 			}
 		}
-
+		println!("{:?}", self);
 		/* Increment the program counter. */
 		self.pc += 4;
+	}
+}
+
+impl fmt::Debug for CPU {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		const REGS_PER_LINE: usize = 2;
+		try!(write!(f, "\nCPU General Purpose Registers:"));
+		for r in 0..GPR_SIZE {
+			if (r % REGS_PER_LINE) == 0 {
+				try!(writeln!(f, ""))
+			}
+			try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
+		}
+
+		try!(write!(f, "\n\nCPU Floating Point Registers:"));
+		for r in 0..GPR_SIZE {
+			if (r % REGS_PER_LINE) == 0 {
+				try!(writeln!(f, ""))
+			}
+			try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
+		}
+
+		Ok(())
+
+		// try!(writeln!(f, "\n\nCPU Special Registers:"));
+		// try!(writeln!(f,
+		// 	"\
+		// 	reg_pc: {:#018X}\n\
+		// 	reg_hi: {:#018X}\n\
+		// 	reg_lo: {:#018X}\n\
+		// 	reg_llbit: {}\n\
+		// 	reg_fcr0:  {:#010X}\n\
+		// 	reg_fcr31: {:#010X}\n\
+		// 	",
+		// 	self.reg_pc,
+		// 	self.reg_hi,
+		// 	self.reg_lo,
+		// 	self.reg_llbit,
+		// 	self.reg_fcr0,
+		// 	self.reg_fcr31
+		// ));
+
+		//writeln!(f, "{:#?}", self.cp0)
 	}
 }
