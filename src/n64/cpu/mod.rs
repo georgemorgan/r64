@@ -29,9 +29,18 @@ COP0
  use n64::N64;
  use n64::mc;
 
+#[derive(Copy, Clone)]
+/* Possible opcode classes. */
+enum OpC {
+	I, J, R
+}
+
 /* Valid VR4300 opcodes. Figure 16-1 in NEC VR4300. */
 #[derive(Copy, Clone)]
 enum Op {
+
+	/* Unique Opcodes */
+
 	Special,	RegImm,		J,			Jal,		Beq,		Bne,		Blez,		Bgtz,
 	Addi,		Addiu,		Slti,		Sltiu,		Andi,		Ori,		Xori,		Lui,
 	Cop0,		Cop1,		Cop2,		/**/		Beql,		Bnel,		Blezl,		Bgtzl,
@@ -41,36 +50,8 @@ enum Op {
 	Ll,			Lwc1,		Lwc2,		/**/		Lld,		Ldc1,		Ldc2,		Ld,
 	Sc,			Swc1,		Swc2,		/**/		Scd,		Sdc1,		Sdc2,		Sd,
 
-	Reserved
-}
+	/* Special Opcodes */
 
-/* A static 2-d array of the opcode names. */
-const OP_NAMES: [[&'static str; 8]; 8] = [
-	[ "special",	"regimm",		"j",		"jal",			"beq",			"bne",			"blez",			"bgtz"		],
-	[ "addi",		"addiu",		"slti",		"sltiu",		"andi",			"ori",			"xori",			"lui"		],
-	[ "cop0",		"cop1",			"cop2",		"reserved",		"beql",			"bnel",			"blezl",		"bgtzl"		],
-	[ "daddi",		"daddiu",		"ldl",		"ldr",			"reserved",		"reserved",		"reserved",		"reserved"	],
-	[ "lb",			"lh",			"lwl",		"lw",			"lbu",			"lhu",			"lwr",			"lwu"		],
-	[ "sb",			"sh",			"swl",		"sw",			"sdl",			"sdr",			"swr",			"cache"		],
-	[ "ll",			"lwc1",			"lwc2",		"reserved",		"lld",			"ldc1",			"ldc2",			"ld"		],
-	[ "sc",			"swc1",			"swc2",		"reserved",		"scd",			"sdc1",			"sdc2",			"sd"		],
-];
-
-/* A constant 2-d array of the opcode values. */
-static OP_TABLE: [[Op; 8]; 8] = [
-	[ Op::Special,	Op::RegImm,		Op::J,			Op::Jal,		Op::Beq,		Op::Bne,		Op::Blez,		Op::Bgtz	 ],
-	[ Op::Addi,		Op::Addiu,		Op::Slti,		Op::Sltiu,		Op::Andi,		Op::Ori,		Op::Xori,		Op::Lui		 ],
-	[ Op::Cop0,		Op::Cop1,		Op::Cop2,		Op::Reserved,	Op::Beql,		Op::Bnel,		Op::Blezl,		Op::Bgtzl	 ],
-	[ Op::Daddi,	Op::Daddiu,		Op::Ldl,		Op::Ldr,		Op::Reserved,	Op::Reserved,	Op::Reserved,	Op::Reserved ],
-	[ Op::Lb,		Op::Lh,			Op::Lwl,		Op::Lw,			Op::Lbu,		Op::Lhu,		Op::Lwr,		Op::Lwu		 ],
-	[ Op::Sb,		Op::Sh,			Op::Swl,		Op::Sw,			Op::Sdl,		Op::Sdr,		Op::Swr,		Op::Cache	 ],
-	[ Op::Ll,		Op::Lwc1,		Op::Lwc2,		Op::Reserved,	Op::Lld,		Op::Ldc1,		Op::Ldc2,		Op::Ld		 ],
-	[ Op::Sc,		Op::Swc1,		Op::Swc2,		Op::Reserved,	Op::Scd,		Op::Sdc1,		Op::Sdc2,		Op::Sd		 ],
-];
-
-/* Special operations. */
-#[derive(Copy, Clone)]
-enum SpOp {
 	Sll,		/**/		Srl,		Sra,		Sllv,		/**/		Srlv,		Srav,
 	Jr,			Jalr,		/**/		/**/		Syscall,	Brk,		/**/		Sync,
 	Mfhi,		Mthi,		Mflo,		Mtlo,		Dsllv,		/**/		Dsrlv,		Dsrav,
@@ -83,28 +64,143 @@ enum SpOp {
 	Reserved
 }
 
-/* A static 2-d array of the opcode names. */
-const SP_OP_NAMES: [[&'static str; 8]; 8] = [
-	[ "sll",		"reserved",		"srl",			"sra",			"sllv",			"reserved",		"srlv",			"srav"		],
-	[ "jr",			"jalr",			"reserved",		"reserved",		"syscall",		"brk",			"reserved",		"sync"		],
-	[ "mfhi",		"mthi",			"mflo",			"mtlo",			"dsllv",		"reserved",		"dsrlv",		"dsrav"		],
-	[ "mult",		"multu",		"div",			"divu",			"dmult",		"dmultu",		"ddiv",			"ddivu"		],
-	[ "add",		"addu",			"sub",			"subu",			"and",			"or",			"xor",			"nor"		],
-	[ "reserved",	"reserved",		"slt",			"sltu",			"dadd",			"daddu",		"dsub",			"dsubu"		],
-	[ "tge",		"tgeu",			"tlt",			"tltu",			"teq",			"reserved",		"tne",			"reserved"	],
-	[ "dsll",		"reserved",		"dsrl",			"dsra",			"dsll32",		"reserved",		"dsrl32",		"dsra32"	],
+type OpF = &'static Fn(u64, u64) -> u64;
+type OpTup = (Op, &'static str, OpC, OpF);
+/* A constant 2-d array of the opcode values. */
+const OP_TABLE: [[OpTup; 8]; 8] = [
+	[(Op::Special,  "special",  OpC::I, &|_, _| 0),
+	 (Op::RegImm,   "regimm",   OpC::I, &|_, _| 0),
+	 (Op::J,        "j",        OpC::I, &|_, _| 0),
+	 (Op::Jal,      "jal",      OpC::I, &|_, _| 0),
+	 (Op::Beq,      "beq",      OpC::I, &|_, _| 0),
+	 (Op::Bne,      "bne",      OpC::I, &|_, _| 0),
+	 (Op::Blez,     "blez",     OpC::I, &|_, _| 0),
+	 (Op::Bgtz,     "bgtz",     OpC::I, &|_, _| 0)
+	],
+	[(Op::Addi,     "addi",     OpC::I, &|_, _| 0),
+	 (Op::Addiu,    "addiu",    OpC::I, &|_, _| 0),
+	 (Op::Slti,     "slti",     OpC::I, &|_, _| 0),
+	 (Op::Sltiu,    "sltiu",    OpC::I, &|_, _| 0),
+	 (Op::Andi,     "andi",     OpC::I, &|_, _| 0),
+	 (Op::Ori,      "ori",      OpC::I, &|_, _| 0),
+	 (Op::Xori,     "xori",     OpC::I, &|_, _| 0),
+	 (Op::Lui,      "lui",      OpC::I, &|_, _| 0)],
+	[(Op::Cop0,     "cop0",     OpC::I, &|_, _| 0),
+	 (Op::Cop1,     "cop1",     OpC::I, &|_, _| 0),
+	 (Op::Cop2,     "cop2",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Beql,     "beql",     OpC::I, &|_, _| 0),
+	 (Op::Bnel,     "bnel",     OpC::I, &|_, _| 0),
+	 (Op::Blezl,    "blezl",    OpC::I, &|_, _| 0),
+	 (Op::Bgtzl,    "bgtzl",    OpC::I, &|_, _| 0)],
+	[(Op::Daddi,    "daddi",    OpC::I, &|_, _| 0),
+	 (Op::Daddiu,   "daddiu",   OpC::I, &|_, _| 0),
+	 (Op::Ldl,      "ldl",      OpC::I, &|_, _| 0),
+	 (Op::Ldr,      "ldr",      OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
+	[(Op::Lb,       "lb",       OpC::I, &|_, _| 0),
+	 (Op::Lh,       "lh",       OpC::I, &|_, _| 0),
+	 (Op::Lwl,      "lwl",      OpC::I, &|_, _| 0),
+	 (Op::Lw,       "lw",       OpC::I, &|_, _| 0),
+	 (Op::Lbu,      "lbu",      OpC::I, &|_, _| 0),
+	 (Op::Lhu,      "lhu",      OpC::I, &|_, _| 0),
+	 (Op::Lwr,      "lwr",      OpC::I, &|_, _| 0),
+	 (Op::Lwu,      "lwu",      OpC::I, &|_, _| 0)],
+	[(Op::Sb,       "sb",       OpC::I, &|_, _| 0),
+	 (Op::Sh,       "sh",       OpC::I, &|_, _| 0),
+	 (Op::Swl,      "swl",      OpC::I, &|_, _| 0),
+	 (Op::Sw,       "sw",       OpC::I, &|_, _| 0),
+	 (Op::Sdl,      "sdl",      OpC::I, &|_, _| 0),
+	 (Op::Sdr,      "sdr",      OpC::I, &|_, _| 0),
+	 (Op::Swr,      "swr",      OpC::I, &|_, _| 0),
+	 (Op::Cache,    "cache",    OpC::I, &|_, _| 0)],
+	[(Op::Ll,       "ll",       OpC::I, &|_, _| 0),
+	 (Op::Lwc1,     "lwc1",     OpC::I, &|_, _| 0),
+	 (Op::Lwc2,     "lwc2",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Lld,      "lld",      OpC::I, &|_, _| 0),
+	 (Op::Ldc1,     "ldc1",     OpC::I, &|_, _| 0),
+	 (Op::Ldc2,     "ldc2",     OpC::I, &|_, _| 0),
+	 (Op::Ld,       "ld",       OpC::I, &|_, _| 0)],
+	[(Op::Sc,       "sc",       OpC::I, &|_, _| 0),
+	 (Op::Swc1,     "swc1",     OpC::I, &|_, _| 0),
+	 (Op::Swc2,     "swc2",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Scd,      "scd",      OpC::I, &|_, _| 0),
+	 (Op::Sdc1,     "sdc1",     OpC::I, &|_, _| 0),
+	 (Op::Sdc2,     "sdc2",     OpC::I, &|_, _| 0),
+	 (Op::Sd,       "sd",       OpC::I, &|_, _| 0)],
 ];
 
-/* A constant 2-d array of the special function values. */
-static SP_OP_TABLE: [[SpOp; 8]; 8] = [
-	[ SpOp::Sll,		SpOp::Reserved,		SpOp::Srl,			SpOp::Sra,			SpOp::Sllv,			SpOp::Reserved,			SpOp::Srlv,			SpOp::Srav	 	],
-	[ SpOp::Jr,			SpOp::Jalr,			SpOp::Reserved,		SpOp::Reserved,		SpOp::Syscall,		SpOp::Brk,				SpOp::Reserved,		SpOp::Sync	 	],
-	[ SpOp::Mfhi,		SpOp::Mthi,			SpOp::Mflo,			SpOp::Mtlo,			SpOp::Dsllv,		SpOp::Reserved,			SpOp::Dsrlv,		SpOp::Dsrav	 	],
-	[ SpOp::Mult,		SpOp::Multu,		SpOp::Div,			SpOp::Divu,			SpOp::Dmult,		SpOp::Dmultu,			SpOp::Ddiv,			SpOp::Ddivu	 	],
-	[ SpOp::Add,		SpOp::Addu,			SpOp::Sub,			SpOp::Subu,			SpOp::And,			SpOp::Or,				SpOp::Xor,			SpOp::Nor	 	],
-	[ SpOp::Reserved,	SpOp::Reserved,		SpOp::Slt,			SpOp::Sltu,			SpOp::Dadd,			SpOp::Daddu,			SpOp::Dsub,			SpOp::Dsubu	 	],
-	[ SpOp::Tge,		SpOp::Tgeu,			SpOp::Tlt,			SpOp::Tltu,			SpOp::Teq,			SpOp::Reserved,			SpOp::Tne,			SpOp::Reserved	],
-	[ SpOp::Dsll,		SpOp::Reserved,		SpOp::Dsrl,			SpOp::Dsra,			SpOp::Dsll32,		SpOp::Reserved,			SpOp::Dsrl32,		SpOp::Dsra32 	],
+/* A constant 2-d array of the opcode values. */
+const SP_OP_TABLE: [[OpTup; 8]; 8] = [
+	[(Op::Sll,      "sll",      OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Srl,      "srl",      OpC::I, &|_, _| 0),
+	 (Op::Sra,      "sra",      OpC::I, &|_, _| 0),
+	 (Op::Sllv,     "sllv",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Srlv,     "srlv",     OpC::I, &|_, _| 0),
+	 (Op::Srav,     "srav",     OpC::I, &|_, _| 0)],
+	[(Op::Jr,       "jr",       OpC::I, &|_, _| 0),
+	 (Op::Jalr,     "jalr",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Syscall,  "syscall",  OpC::I, &|_, _| 0),
+	 (Op::Brk,      "brk",      OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Sync,     "sync",     OpC::I, &|_, _| 0)],
+	[(Op::Mfhi,     "mfhi",     OpC::I, &|_, _| 0),
+	 (Op::Mthi,     "mthi",     OpC::I, &|_, _| 0),
+	 (Op::Mflo,     "mflo",     OpC::I, &|_, _| 0),
+	 (Op::Mtlo,     "mtlo",     OpC::I, &|_, _| 0),
+	 (Op::Dsllv,    "dsllv",    OpC::I, &|_, _| 0),
+	 (Op::Reserved, "resered",  OpC::I, &|_, _| 0),
+	 (Op::Dsrlv,    "dsrlv",    OpC::I, &|_, _| 0),
+	 (Op::Dsrav,    "dsrav",    OpC::I, &|_, _| 0)],
+	[(Op::Mult,     "mult",     OpC::I, &|_, _| 0),
+	 (Op::Multu,    "multu",    OpC::I, &|_, _| 0),
+	 (Op::Div,      "div",      OpC::I, &|_, _| 0),
+	 (Op::Divu,     "divu",     OpC::I, &|_, _| 0),
+	 (Op::Dmult,    "dmult",    OpC::I, &|_, _| 0),
+	 (Op::Dmultu,    "dmultu",  OpC::I, &|_, _| 0),
+	 (Op::Ddiv,     "ddiv",     OpC::I, &|_, _| 0),
+	 (Op::Ddivu	,   "ddivu",    OpC::I, &|_, _| 0)],
+	[(Op::Add,      "add",      OpC::I, &|_, _| 0),
+	 (Op::Addu,     "addu",     OpC::I, &|_, _| 0),
+	 (Op::Sub,      "sub",      OpC::I, &|_, _| 0),
+	 (Op::Subu,     "subu",     OpC::I, &|_, _| 0),
+	 (Op::And,      "and",      OpC::I, &|_, _| 0),
+	 (Op::Or,       "or",       OpC::I, &|_, _| 0),
+	 (Op::Xor,      "xor",      OpC::I, &|_, _| 0),
+	 (Op::Nor,      "nor",      OpC::I, &|_, _| 0)],
+	[(Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Slt,      "slt",      OpC::I, &|_, _| 0),
+	 (Op::Sltu,     "sltu",     OpC::I, &|_, _| 0),
+	 (Op::Dadd,     "dadd",     OpC::I, &|_, _| 0),
+	 (Op::Daddu,    "daddu",    OpC::I, &|_, _| 0),
+	 (Op::Dsub,     "dsub",     OpC::I, &|_, _| 0),
+	 (Op::Dsubu,    "dsubu",    OpC::I, &|_, _| 0)],
+	[(Op::Tge,      "tge",      OpC::I, &|_, _| 0),
+	 (Op::Tgeu,     "tgeu",     OpC::I, &|_, _| 0),
+	 (Op::Tlt,      "tlt",      OpC::I, &|_, _| 0),
+	 (Op::Tltu,     "tltu",     OpC::I, &|_, _| 0),
+	 (Op::Teq,      "teq",      OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Tne,      "tne",      OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
+	[(Op::Dsll,     "dsll",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Dsrl,     "dsrl",     OpC::I, &|_, _| 0),
+	 (Op::Dsra,     "dsra",     OpC::I, &|_, _| 0),
+	 (Op::Dsll32,   "dsll32",   OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Dsrl32,   "dsrl32",   OpC::I, &|_, _| 0),
+	 (Op::Dsra32,   "dsra32",   OpC::I, &|_, _| 0)],
 ];
 
 /* Register-Immediate operations */
@@ -133,18 +229,31 @@ impl Inst {
 	pub fn opcode(&self) -> u8{
 		((self.0 >> 26) & 0b111111) as u8
 	}
+	/* Returns the opcode's tuple. */
+	fn op_tup(&self) -> OpTup {
+		let t = OP_TABLE[((self.opcode() >> 3) & 0b111) as usize][(self.opcode() & 0b111) as usize];
+		match t.0 {
+			Op::Special =>
+				SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize],
+			_ =>
+				t,
+		}
+	}
 	/* Returns the enumerated operation type. */
 	pub fn op(&self) -> Op {
-		OP_TABLE[((self.opcode() >> 3) & 0b111) as usize][(self.opcode() & 0b111) as usize]
+		self.op_tup().0
 	}
 	/* Returns a string of the opcode for debugging. */
 	pub fn op_str(&self) -> &str {
-		match self.op() {
-			Op::Special =>
-				self.sp_op_str(),
-			_ =>
-				OP_NAMES[((self.opcode() >> 3) & 0b111) as usize][(self.opcode() & 0b111) as usize]
-		}
+		self.op_tup().1
+	}
+	/* Returns the class of the opcode. */
+	pub fn class(&self) -> OpC {
+		self.op_tup().2
+	}
+	/* Returns the opcode's function. */
+	pub fn function(&self) -> OpF {
+		self.op_tup().3
 	}
 	/* Returns the instruction's source register. */
 	pub fn rs(&self) -> usize {
@@ -169,14 +278,6 @@ impl Inst {
 	/* Return's the function's funct field. */
 	pub fn funct(&self) -> u8 {
 		(self.0 & 0b11111) as u8
-	}
-	/* Returns the instruction's special operation. */
-	pub fn sp_op(&self) -> SpOp {
-		SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize]
-	}
-	/* Returns a string of the special function for debugging. */
-	pub fn sp_op_str(&self) -> &str {
-		SP_OP_NAMES[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize]
 	}
 	/* Return's the instruction's target field. */
 	pub fn target(&self) -> u32 {
@@ -222,28 +323,28 @@ impl CPU {
 	/* Handlers for the 3 instruction formats. - Chapter 3.1 in NEC VR4300 manual. */
 
 	/* Handler for the immediate (I-Type) instructions. */
-	fn exec_imm<F>(&mut self, i: Inst, f: F) where F: FnOnce(u64, u64) -> u64 {
+	fn exec_imm(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs register. */
 		let rs = self.rgpr(i.rs());
 		/* Obtain the immediate value. */
 		let imm = i.imm();
 		/* Perform the operation. */
-		let rt = f(rs, imm);
+		let rt = i.function()(rs, imm);
 		/* Write the result back into the target register. */
 		self.wgpr(rt, i.rt());
 
 	}
 	/* Handler for the jump (J-Type) instructions. */
-	fn exec_jump<F>(&mut self, i: Inst, f: F) where F: FnOnce(u64, u64) -> u64 {
+	fn exec_jump(&mut self, i: Inst) {
 
 	}
 	/* Handler for the register (R-Type) instructions. */
-	fn exec_reg<F>(&mut self, i: Inst, f: F) where F: FnOnce(u64, u64) -> u64 {
+	fn exec_reg(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs and rt registers. */
 		let rs = self.rgpr(i.rs());
 		let rt = self.rgpr(i.rt());
 		/* Perform the operation. */
-		let rd = f(rs, rt);
+		let rd = i.function()(rs, rt);
 		/* Write the result back into the destination register. */
 		self.wgpr(rd, i.rd());
 	}
@@ -252,128 +353,21 @@ impl CPU {
 	pub fn exec(&mut self, i: Inst) {
 		/* Print the opcode. */
 		println!("{:#x}: {:?}", self.pc, i.op_str());
+
 		/* Execute the instrution. */
 		match i.op() {
-			Op::Special =>
-				/* Match against the instruction's special operation. */
-				match i.sp_op() {
-					_ => panic!("Attempt made to execute an unknown or unimplemented special function. {:#x}.", i.funct()),
-				},
-			Op::RegImm =>
-				(),
-			Op::J =>
-				(),
-			Op::Jal =>
-				(),
-			Op::Beq =>
-				(),
-			Op::Bne =>
-				(),
-			Op::Blez =>
-				(),
-			Op::Bgtz =>
-				(),
-			Op::Addi =>
-				(),
-			Op::Addiu =>
-				(),
-			Op::Slti =>
-				(),
-			Op::Sltiu =>
-				(),
-			Op::Andi =>
-				(),
-			Op::Ori =>
-				(),
-			Op::Xori =>
-				(),
-			Op::Lui =>
-				(),
-			Op::Cop0 =>
-				(),
-			Op::Cop1 =>
-				(),
-			Op::Cop2 =>
-				(),
-			Op::Beql =>
-				(),
-			Op::Bnel =>
-				(),
-			Op::Blezl =>
-				(),
-			Op::Bgtzl =>
-				(),
-			Op::Daddi =>
-				(),
-			Op::Daddiu =>
-				(),
-			Op::Ldl =>
-				(),
-			Op::Ldr =>
-				(),
-			Op::Lb =>
-				(),
-			Op::Lh =>
-				(),
-			Op::Lwl =>
-				(),
-			Op::Lw =>
-				(),
-			Op::Lbu =>
-				(),
-			Op::Lhu =>
-				(),
-			Op::Lwr =>
-				(),
-			Op::Lwu =>
-				(),
-			Op::Sb =>
-				(),
-			Op::Sh =>
-				(),
-			Op::Swl =>
-				(),
-			Op::Sw =>
-				(),
-			Op::Sdl =>
-				(),
-			Op::Sdr =>
-				(),
-			Op::Swr =>
-				(),
-			Op::Cache =>
-				(),
-			Op::Ll =>
-				(),
-			Op::Lwc1 =>
-				(),
-			Op::Lwc2 =>
-				(),
-			Op::Lld =>
-				(),
-			Op::Ldc1 =>
-				(),
-			Op::Ldc2 =>
-				(),
-			Op::Ld =>
-				(),
-			Op::Sc =>
-				(),
-			Op::Swc1 =>
-				(),
-			Op::Swc2 =>
-				(),
-			Op::Scd =>
-				(),
-			Op::Sdc1 =>
-				(),
-			Op::Sdc2 =>
-				(),
-			Op::Sd =>
-				(),
 			Op::Reserved => panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
-			_ => panic!("Attempt made to execute an unknown or unimplemented opcode. {:#x}.", i.opcode()),
+			_ => match i.class() {
+				OpC::I =>
+					self.exec_imm(i),
+				OpC::J =>
+					self.exec_jump(i),
+				OpC::R =>
+					self.exec_reg(i),
+				_ => panic!("Invalid opcode class.")
+			}
 		}
+
 		/* Increment the program counter. */
 		self.pc += 4;
 	}
