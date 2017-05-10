@@ -108,40 +108,128 @@ fn read32(addr: usize, mem: &Box<[u8]>) -> u32 {
 	u32::from_be(w.swap_bytes())
 }
 
-/* Reads a word from the provided N64's memory map. */
-pub fn read(n64: &N64, addr: usize) -> u32 {
-	/* Match the memory address to a peripheral address range. */
-	match addr {
-		RDRAM_MEM_START ... RDRAM_MEM_END       =>
-			read32(addr - RDRAM_MEM_START, &n64.iram),
-		RDRAM_REG_START ... RDRAM_REG_END       => 0,
-		SP_REG_START ... SP_REG_END             => 0,
-		DP_CMD_START ... DP_CMD_END             => 0,
-		DP_SPAN_START ... DP_SPAN_END           => 0,
-		MI_REG_START ... MI_REG_END             => 0,
-		VI_REG_START ... VI_REG_END             => 0,
-		AI_REG_START ... AI_REG_END             => 0,
-		PI_REG_START ... PI_REG_END             => 0,
-		RI_REG_START ... RI_REG_END             => 0,
-		SI_REG_START ... SI_REG_END             => 0,
-		UNUSED_START ... UNUSED_END             => 0,
-		CART_DOM2_A1_START ... CART_DOM2_A1_END =>
-			read32(addr - CART_DOM2_A1_START, &n64.crom),
-		CART_DOM1_A1_START ... CART_DOM1_A1_END =>
-			read32(addr - CART_DOM1_A1_START, &n64.crom),
-		CART_DOM2_A2_START ... CART_DOM2_A2_END =>
-			read32(addr - CART_DOM2_A2_START, &n64.crom),
-		CART_DOM1_A2_START ... CART_DOM1_A2_END =>
-			read32(addr - CART_DOM1_A2_START, &n64.crom),
-		PIF_ROM_START ... PIF_ROM_END           =>
-			read32(addr - PIF_ROM_START, &n64.pif.prom),
-		PIF_RAM_START ... PIF_RAM_END           =>
-			read32(addr - PIF_RAM_START, &n64.pif.pram),
-		RESERVED_START ... RESERVED_END         => 0,
-		CART_DOM1_A3_START ... CART_DOM1_A3_END =>
-			read32(addr - CART_DOM1_A3_START, &n64.crom),
-		SYSAD_START ... SYSAD_END               => 0,
-		_ => panic!("Unrecognized physical address: {:#x}", addr)
+pub struct MC {
+	/* System memories. */
+
+	/* 4MB internal RDRAM. */
+	iram: Box<[u8]>,
+	/* 4MB expansion RDRAM. */
+	eram: Box<[u8]>,
+	/* Cartridge ROM. */
+	crom: Box<[u8]>,
+
+	/* PIF memories. */
+
+	/* The PIF's internal RAM. */
+	pram: Box<[u8]>,
+	/* The PIF's internal ROM from which the console boots. */
+	prom: Box<[u8]>
+}
+
+impl MC {
+	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> MC {
+		MC {
+			/* System memories. */
+
+			/* Allocate the IRAM. */
+			iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
+			/* Allocate the ERAM. */
+			eram: vec![0; N64_ERAM_SIZE].into_boxed_slice(),
+			/* Transfer ownership of the CROM. */
+			crom: cr,
+
+			/* PIF memories. */
+
+			/* Allocate the PRAM. */
+			pram: vec![0; PIF_RAM_END - PIF_RAM_START].into_boxed_slice(),
+			/* Transfer ownership of the PROM. */
+			prom: pr
+		}
+	}
+	/* Reads a word from the memory map. */
+	pub fn read(&self, addr: usize) -> u32 {
+		/* Match the memory address to a peripheral address range. */
+		match addr {
+			RDRAM_MEM_START ... RDRAM_MEM_END       =>
+				read32(addr - RDRAM_MEM_START, &self.iram),
+			RDRAM_REG_START ... RDRAM_REG_END       => 0,
+			SP_REG_START ... SP_REG_END             => 0,
+			DP_CMD_START ... DP_CMD_END             => 0,
+			DP_SPAN_START ... DP_SPAN_END           => 0,
+			MI_REG_START ... MI_REG_END             => 0,
+			VI_REG_START ... VI_REG_END             => 0,
+			AI_REG_START ... AI_REG_END             => 0,
+			PI_REG_START ... PI_REG_END             => 0,
+			RI_REG_START ... RI_REG_END             => 0,
+			SI_REG_START ... SI_REG_END             => 0,
+			UNUSED_START ... UNUSED_END             => 0,
+			CART_DOM2_A1_START ... CART_DOM2_A1_END =>
+				read32(addr - CART_DOM2_A1_START, &self.crom),
+			CART_DOM1_A1_START ... CART_DOM1_A1_END =>
+				read32(addr - CART_DOM1_A1_START, &self.crom),
+			CART_DOM2_A2_START ... CART_DOM2_A2_END =>
+				read32(addr - CART_DOM2_A2_START, &self.crom),
+			CART_DOM1_A2_START ... CART_DOM1_A2_END =>
+				read32(addr - CART_DOM1_A2_START, &self.crom),
+			PIF_ROM_START ... PIF_ROM_END           =>
+				read32(addr - PIF_ROM_START, &self.prom),
+			PIF_RAM_START ... PIF_RAM_END           =>
+				read32(addr - PIF_RAM_START, &self.pram),
+			RESERVED_START ... RESERVED_END         => 0,
+			CART_DOM1_A3_START ... CART_DOM1_A3_END =>
+				read32(addr - CART_DOM1_A3_START, &self.crom),
+			SYSAD_START ... SYSAD_END               => 0,
+			_ => panic!("Unrecognized physical address: {:#x}", addr)
+		}
+	}
+	/* Writes a word to the provided N64's memory map. */
+	pub fn write(&mut self, val: u32, addr: usize) {
+		/* Match the memory address to a peripheral address range. */
+		match addr {
+			RDRAM_MEM_START ... RDRAM_MEM_END       =>
+				write32(val, addr - RDRAM_MEM_START, &mut self.iram),
+			RDRAM_REG_START ... RDRAM_REG_END       =>
+				return,
+			SP_REG_START ... SP_REG_END             =>
+				return,
+			DP_CMD_START ... DP_CMD_END             =>
+				return,
+			DP_SPAN_START ... DP_SPAN_END           =>
+				return,
+			MI_REG_START ... MI_REG_END             =>
+				return,
+			VI_REG_START ... VI_REG_END             =>
+				return,
+			AI_REG_START ... AI_REG_END             =>
+				return,
+			PI_REG_START ... PI_REG_END             =>
+				return,
+			RI_REG_START ... RI_REG_END             =>
+				return,
+			SI_REG_START ... SI_REG_END             =>
+				return,
+			UNUSED_START ... UNUSED_END             =>
+				return,
+			CART_DOM2_A1_START ... CART_DOM2_A1_END =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			CART_DOM1_A1_START ... CART_DOM1_A1_END =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			CART_DOM2_A2_START ... CART_DOM2_A2_END =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			CART_DOM1_A2_START ... CART_DOM1_A2_END =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			PIF_ROM_START ... PIF_ROM_END           =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			PIF_RAM_START ... PIF_RAM_END           =>
+				write32(val, addr - PIF_RAM_START, &mut self.pram),
+			RESERVED_START ... RESERVED_END         =>
+				return,
+			CART_DOM1_A3_START ... CART_DOM1_A3_END =>
+				panic!("Attempt to write to a read-only location {:#x}.", addr),
+			SYSAD_START ... SYSAD_END               =>
+				return,
+			_ => panic!("Unrecognized physical address: {:#x}", addr)
+		}
 	}
 }
 
@@ -150,54 +238,4 @@ fn write32(val: u32, addr: usize, mem: &mut Box<[u8]>) {
 	let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
 	/* Write the slice into memory. */
 	mem[addr .. addr + 4].copy_from_slice(from);
-}
-
-/* Writes a word to the provided N64's memory map. */
-pub fn write(n64: &mut N64, val: u32, addr: usize) {
-	/* Match the memory address to a peripheral address range. */
-	match addr {
-		RDRAM_MEM_START ... RDRAM_MEM_END       =>
-			write32(val, addr - RDRAM_MEM_START, &mut n64.iram),
-		RDRAM_REG_START ... RDRAM_REG_END       =>
-			return,
-		SP_REG_START ... SP_REG_END             =>
-			return,
-		DP_CMD_START ... DP_CMD_END             =>
-			return,
-		DP_SPAN_START ... DP_SPAN_END           =>
-			return,
-		MI_REG_START ... MI_REG_END             =>
-			return,
-		VI_REG_START ... VI_REG_END             =>
-			return,
-		AI_REG_START ... AI_REG_END             =>
-			return,
-		PI_REG_START ... PI_REG_END             =>
-			return,
-		RI_REG_START ... RI_REG_END             =>
-			return,
-		SI_REG_START ... SI_REG_END             =>
-			return,
-		UNUSED_START ... UNUSED_END             =>
-			return,
-		CART_DOM2_A1_START ... CART_DOM2_A1_END =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		CART_DOM1_A1_START ... CART_DOM1_A1_END =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		CART_DOM2_A2_START ... CART_DOM2_A2_END =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		CART_DOM1_A2_START ... CART_DOM1_A2_END =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		PIF_ROM_START ... PIF_ROM_END           =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		PIF_RAM_START ... PIF_RAM_END           =>
-			write32(val, addr - PIF_RAM_START, &mut n64.pif.pram),
-		RESERVED_START ... RESERVED_END         =>
-			return,
-		CART_DOM1_A3_START ... CART_DOM1_A3_END =>
-			panic!("Attempt to write to a read-only location {:#x}.", addr),
-		SYSAD_START ... SYSAD_END               =>
-			return,
-		_ => panic!("Unrecognized physical address: {:#x}", addr)
-	}
 }

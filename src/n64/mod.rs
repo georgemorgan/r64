@@ -20,6 +20,7 @@ mod cpu;
 use self::cpu::CPU;
 
 mod mc;
+use self::mc::MC;
 
 #[repr(C, packed)]
 pub struct N64_ROM_HEADER {
@@ -41,14 +42,8 @@ pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 
 pub struct N64 {
 
-	/* System memories. */
-
-	/* 4MB internal RDRAM. */
-	iram: Box<[u8]>,
-	/* 4MB expansion RDRAM. */
-	eram: Box<[u8]>,
-	/* Cartridge ROM. */
-	crom: Box<[u8]>,
+	/* Virtual memory map controller. */
+	mc: MC,
 
 	/* RCP-NUS */
 
@@ -76,7 +71,7 @@ pub struct N64 {
 impl N64 {
 	pub fn begin(&mut self) {
 		for x in 0 .. 100 {
-			cpu::cycle(self)
+			self.cpu.cycle(&mut self.mc);
 		}
 	}
 	/* Initializer for the N64 umbrella module. */
@@ -84,14 +79,8 @@ impl N64 {
 	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
 		N64 {
 
-			/* System memories. */
-
-			/* Allocate the IRAM. */
-			iram: vec![0; mc::N64_IRAM_SIZE].into_boxed_slice(),
-			/* Allocate the ERAM. */
-			eram: vec![0; mc::N64_ERAM_SIZE].into_boxed_slice(),
-			/* Transfer ownership of the CROM. */
-			crom: cr,
+			/* Memory map controller. */
+			mc: MC::new(cr, pr),
 
 			/* RCP-NUS */
 			vi: VI::new(),
@@ -100,7 +89,7 @@ impl N64 {
 			pi: PI::new(),
 			rsp: RSP::new(),
 			rdp: RDP::new(),
-			pif: PIF::new(pr),
+			pif: PIF::new(),
 
 			/* CPU-NUS */
 			cpu: CPU::new(mc::PIF_ROM_START as u64),
