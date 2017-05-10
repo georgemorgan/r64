@@ -32,14 +32,16 @@ COP0
 #[derive(Copy, Clone)]
 /* Possible opcode classes. */
 enum OpC {
-	/* Immediate instruction. */
+	/* Immediate instruction. (I-type) */
 	I,
 	/* Load instruction. (subset of I-type) */
 	L,
 	/* Store instruction. (subset of I-type) */
 	S,
-	/* Jump instruction. */
+	/* Jump instruction. (J-type) */
 	J,
+	/* Branch instruction. (subset of J-type) */
+	B,
 	/* Register instruction. */
 	R,
 }
@@ -105,14 +107,14 @@ type OpF = &'static Fn(u64, u64, u16) -> u64;
 type OpTup = (Op, &'static str, OpC, OpF);
 /* A constant 2-d array of the opcode values. */
 const OP_TABLE: [[OpTup; 8]; 8] = [
-	[(Op::Special,  "special",  OpC::I, &|_, _, _| 0),
+	[(Op::Special,  "special",  OpC::R, &|_, _, _| 0),
 	 (Op::RegImm,   "regimm",   OpC::I, &|_, _, _| 0),
 	 (Op::J,        "j",        OpC::J, &|_, _, _| 0),
 	 (Op::Jal,      "jal",      OpC::J, &|_, _, _| 0),
-	 (Op::Beq,      "beq",      OpC::J, &|_, _, _| 0),
-	 (Op::Bne,      "bne",      OpC::J, &|_, _, _| 0),
-	 (Op::Blez,     "blez",     OpC::J, &|_, _, _| 0),
-	 (Op::Bgtz,     "bgtz",     OpC::J, &|_, _, _| 0)],
+	 (Op::Beq,      "beq",      OpC::B, &|rt, rs, _| if rt == rs { 1 } else { 0 }),
+	 (Op::Bne,      "bne",      OpC::B, &|rt, rs, _| 0),
+	 (Op::Blez,     "blez",     OpC::B, &|rt, rs, _| 0),
+	 (Op::Bgtz,     "bgtz",     OpC::B, &|rt, rs, _| 0)],
 
 	[(Op::Addi,     "addi",     OpC::I, &|_, rs, imm| rs + (imm as i16) as u64),
 	 (Op::Addiu,    "addiu",    OpC::I, &|_, rs, imm| rs + (imm as i16) as u64),
@@ -127,10 +129,10 @@ const OP_TABLE: [[OpTup; 8]; 8] = [
 	 (Op::Cop1,     "cop1",     OpC::I, &|_, _, _| 0),
 	 (Op::Cop2,     "cop2",     OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
-	 (Op::Beql,     "beql",     OpC::J, &|_, _, _| 0),
-	 (Op::Bnel,     "bnel",     OpC::J, &|_, _, _| 0),
-	 (Op::Blezl,    "blezl",    OpC::J, &|_, _, _| 0),
-	 (Op::Bgtzl,    "bgtzl",    OpC::J, &|_, _, _| 0)],
+	 (Op::Beql,     "beql",     OpC::B, &|rt, rs, _| if rt == rs { 1 } else { 0 }),
+	 (Op::Bnel,     "bnel",     OpC::B, &|rt, rs, _| if rt != rs { 1 } else { 0 }),
+	 (Op::Blezl,    "blezl",    OpC::B, &|rt, rs, _| if (rs as i64) < 0 { 1 } else { 0 }),
+	 (Op::Bgtzl,    "bgtzl",    OpC::B, &|rt, rs, _| if (rs as i64) > 0 { 1 } else { 0 })],
 
 	[(Op::Daddi,    "daddi",    OpC::I, &|_, rs, imm| 0),
 	 (Op::Daddiu,   "daddiu",   OpC::I, &|_, rs, imm| 0),
@@ -150,10 +152,10 @@ const OP_TABLE: [[OpTup; 8]; 8] = [
 	 (Op::Lwr,      "lwr",      OpC::L, &|val, _, _| 0),
 	 (Op::Lwu,      "lwu",      OpC::L, &|val, _, _| val as u32 as u64)],
 
-	[(Op::Sb,       "sb",       OpC::S, &|rt, _, _| 0),
-	 (Op::Sh,       "sh",       OpC::S, &|rt, _, _| 0),
+	[(Op::Sb,       "sb",       OpC::S, &|rt, _, _| (rt & 0xff) as u64),
+	 (Op::Sh,       "sh",       OpC::S, &|rt, _, _| (rt & 0xffff) as u64),
 	 (Op::Swl,      "swl",      OpC::S, &|rt, _, _| 0),
-	 (Op::Sw,       "sw",       OpC::S, &|rt, _, _| 0),
+	 (Op::Sw,       "sw",       OpC::S, &|rt, _, _| rt as u32 as u64),
 	 (Op::Sdl,      "sdl",      OpC::S, &|rt, _, _| 0),
 	 (Op::Sdr,      "sdr",      OpC::S, &|rt, _, _| 0),
 	 (Op::Swr,      "swr",      OpC::S, &|rt, _, _| 0),
@@ -191,11 +193,11 @@ const SP_OP_TABLE: [[OpTup; 8]; 8] = [
 
 	[(Op::Jr,       "jr",       OpC::J, &|_, _, _| 0),
 	 (Op::Jalr,     "jalr",     OpC::J, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::R, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::R, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Syscall,  "syscall",  OpC::R, &|_, _, _| 0),
 	 (Op::Brk,      "brk",      OpC::R, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::R, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Sync,     "sync",     OpC::R, &|_, _, _| 0)],
 
 	[(Op::Mfhi,     "mfhi",     OpC::R, &|_, _, _| 0),
@@ -255,10 +257,10 @@ const SP_OP_TABLE: [[OpTup; 8]; 8] = [
 
 /* A constant 2-d array of the opcode values. , _*/
 const RI_OP_TABLE: [[OpTup; 8]; 4] = [
-	[(Op::Bltz,     "bltz",     OpC::J, &|_, _, _| 0),
-	 (Op::Bgez,     "bgez",     OpC::J, &|_, _, _| 0),
-	 (Op::Bltzl,    "bltzl",    OpC::J, &|_, _, _| 0),
-	 (Op::Bgezl,    "bgezl",    OpC::J, &|_, _, _| 0),
+	[(Op::Bltz,     "bltz",     OpC::B, &|rt, rs, _| 0),
+	 (Op::Bgez,     "bgez",     OpC::B, &|rt, rs, _| 0),
+	 (Op::Bltzl,    "bltzl",    OpC::B, &|rt, rs, _| 0),
+	 (Op::Bgezl,    "bgezl",    OpC::B, &|rt, rs, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
@@ -273,10 +275,10 @@ const RI_OP_TABLE: [[OpTup; 8]; 4] = [
 	 (Op::Tnei,     "tnei",     OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
 
-	[(Op::Bltzal,   "bltzal",   OpC::J, &|_, _, _| 0),
-	 (Op::Bgezal,   "bgezal",   OpC::J, &|_, _, _| 0),
-	 (Op::Bltzall,  "bltzall",  OpC::J, &|_, _, _| 0),
-	 (Op::Bgezall,  "bgezall",  OpC::J, &|_, _, _| 0),
+	[(Op::Bltzal,   "bltzal",   OpC::B, &|rt, rs, _| 0),
+	 (Op::Bgezal,   "bgezal",   OpC::B, &|rt, rs, _| 0),
+	 (Op::Bltzall,  "bltzall",  OpC::B, &|rt, rs, _| 0),
+	 (Op::Bgezall,  "bgezall",  OpC::B, &|rt, rs, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
@@ -413,7 +415,7 @@ impl Inst {
 	}
 	/* Returns the function's target. */
 	pub fn target(&self) -> u64 {
-		0
+		(self.0 & 0x3ffffff) as u64
 	}
 }
 const GPR_NAMES: [&'static str; GPR_SIZE] = [
@@ -434,6 +436,8 @@ impl fmt::Display for Inst {
 				write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()]),
 			OpC::J =>
 				write!(f, "{} {:#x}", self.op_str(), self.target()),
+			OpC::B =>
+				write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rt()], GPR_NAMES[self.rs()], self.offset() as i16 as i64),
 			OpC::R =>
 				write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rt()], GPR_NAMES[self.rs()]),
 
@@ -492,6 +496,8 @@ impl CPU {
 		let rt = i.function()(0, rs, imm);
 		/* Write the result back into the target register. */
 		self.wgpr(rt, i.rt());
+		/* Increment the program counter. */
+		self.pc += 4;
 	}
 	/* Handler for the load/store subclass of the I-type instructions. */
 	fn exec_ldst(&mut self, mc: &mut MC, i: Inst) {
@@ -518,10 +524,30 @@ impl CPU {
 			},
 			_ => ()
 		}
+		/* Increment the program counter. */
+		self.pc += 4;
 	}
 	/* Handler for the jump (J-Type) instructions. */
 	fn exec_jump(&mut self, i: Inst) {
 
+	}
+	/* Handler for the branch subclass of the J-type instructions. */
+	fn exec_branch(&mut self, i: Inst) {
+		/* Obtain the value of rs. */
+		let rs = self.rgpr(i.rs());
+		/* Obtain the value of rt. */
+		let rt = self.rgpr(i.rt());
+		/* Obtain the offset address. */
+		let offset = i.offset() as i16 as i64;
+		/* Determine whether or not the branch should occur .*/
+		let should_branch = i.function()(rt, rs, 0);
+		/* Perform the branch. */
+		if should_branch > 0{
+			self.pc = (self.pc as i64 + offset) as u64;
+		} else {
+			/* Increment the program counter. */
+			self.pc += 4;
+		}
 	}
 	/* Handler for the register (R-Type) instructions. */
 	fn exec_reg(&mut self, i: Inst) {
@@ -532,6 +558,8 @@ impl CPU {
 		let rd = i.function()(rt, rs, i.sa());
 		/* Write the result back into the destination register. */
 		self.wgpr(rd, i.rd());
+		/* Increment the program counter. */
+		self.pc += 4;
 	}
 
 	/* Executes an instruction. */
@@ -539,9 +567,40 @@ impl CPU {
 		/* Fetch the next instrution from memory. */
 		let i = Inst(mc.read(self.pc as usize));
 		/* Print the opcode. */
-		println!("{:#x}: {}", self.pc, i);
+		println!("{:#x}:\t{:#x}\t{}", self.pc, i.0, i);
 		/* Execute the instrution. */
 		match i.op() {
+			/* Handle the jump instructions here. */
+			Op::J => {
+				/* Obtain the jump target. */
+				let target = i.target();
+				/* Load the target into the program counter. */
+				self.pc = target;
+			},
+			Op::Jal => {
+				/* Obtain the jump target. */
+				let target = i.target();
+				/* Load the program counter into the return address. */
+				let pc = self.pc;
+				self.wgpr(pc, 31);
+				/* Load the target into the program counter. */
+				self.pc = target;
+			},
+			Op::Jr => {
+				/* Obtain the jump target. */
+				let target = self.rgpr(i.rs());
+				/* Load the program counter into the return address. */
+				let pc = self.pc;
+			},
+			Op::Jalr => {
+				/* Obtain the jump target. */
+				let target = self.rgpr(i.rs());
+				/* Load the program counter into the destination register. */
+				let pc = self.pc;
+				self.wgpr(pc, i.rd());
+				/* Load the program counter into the return address. */
+				let pc = self.pc;
+			},
 			Op::Reserved => panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
 			_ => match i.class() {
 				OpC::I =>
@@ -550,13 +609,13 @@ impl CPU {
 					self.exec_ldst(mc, i),
 				OpC::J =>
 					self.exec_jump(i),
+				OpC::B =>
+					self.exec_branch(i),
 				OpC::R =>
 					self.exec_reg(i),
 			}
 		}
-		println!("{:?}", self);
-		/* Increment the program counter. */
-		self.pc += 4;
+		//println!("{:?}", self);
 	}
 }
 
