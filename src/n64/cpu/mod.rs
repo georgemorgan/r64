@@ -39,7 +39,7 @@ enum OpC {
 #[derive(Copy, Clone)]
 enum Op {
 
-	/* Unique Opcodes */
+	/* Unique opcodes */
 
 	Special,	RegImm,		J,			Jal,		Beq,		Bne,		Blez,		Bgtz,
 	Addi,		Addiu,		Slti,		Sltiu,		Andi,		Ori,		Xori,		Lui,
@@ -50,7 +50,7 @@ enum Op {
 	Ll,			Lwc1,		Lwc2,		/**/		Lld,		Ldc1,		Ldc2,		Ld,
 	Sc,			Swc1,		Swc2,		/**/		Scd,		Sdc1,		Sdc2,		Sd,
 
-	/* Special Opcodes */
+	/* Special opcodes */
 
 	Sll,		/**/		Srl,		Sra,		Sllv,		/**/		Srlv,		Srav,
 	Jr,			Jalr,		/**/		/**/		Syscall,	Brk,		/**/		Sync,
@@ -60,6 +60,13 @@ enum Op {
 	/**/		/**/		Slt,		Sltu,		Dadd,		Daddu,		Dsub,		Dsubu,
 	Tge,		Tgeu,		Tlt,		Tltu,		Teq,		/**/		Tne,		/**/
 	Dsll,		/**/		Dsrl,		Dsra,		Dsll32,		/**/		Dsrl32,		Dsra32,
+
+	/* RegImm opcodes. */
+
+	Bltz,		Bgez,		Bltzl,		Bgezl,		/**/		/**/		/**/		/**/
+	Tgei,		Tgeiu,		Tlti,		Tltiu,		Teqi,		/**/		Tnei,		/**/
+	Bltzal,		Bgezal,		Bltzall,	Bgezall,	/**/		/**/		/**/		/**/
+	/**/		/**/		/**/		/**/		/**/		/**/		/**/		/**/
 
 	Reserved
 }
@@ -203,23 +210,40 @@ const SP_OP_TABLE: [[OpTup; 8]; 8] = [
 	 (Op::Dsra32,   "dsra32",   OpC::I, &|_, _| 0)],
 ];
 
-/* Register-Immediate operations */
-#[derive(Copy, Clone)]
-enum RiOp {
-	Bltz,		Bgez,		Bltzl,		Bgezl,		/**/		/**/		/**/		/**/
-	Tgei,		Tgeiu,		Tlti,		Tltiu,		Teqi,		/**/		Tnei,		/**/
-	Bltzal,		Bgezal,		Bltzall,	Bgezall,	/**/		/**/		/**/		/**/
-	/**/		/**/		/**/		/**/		/**/		/**/		/**/		/**/
-
-	Reserved
-}
-
-/* A constant 2-d array of the register-immediate rt values. */
-static RiOP_TABLE: [[RiOp; 8]; 4] = [
-	[ RiOp::Bltz,		RiOp::Bgez,			RiOp::Bltzl,		RiOp::Bgezl,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved, ],
-	[ RiOp::Tgei,		RiOp::Tgeiu,		RiOp::Tlti,			RiOp::Tltiu,		RiOp::Teqi,			RiOp::Reserved,		RiOp::Tnei,			RiOp::Reserved, ],
-	[ RiOp::Bltzal,		RiOp::Bgezal,		RiOp::Bltzall,		RiOp::Bgezall,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved, ],
-	[ RiOp::Reserved,	RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved,		RiOp::Reserved, ],
+/* A constant 2-d array of the opcode values. */
+const RI_OP_TABLE: [[OpTup; 8]; 4] = [
+	[(Op::Bltz,     "bltz",     OpC::I, &|_, _| 0),
+	 (Op::Bgez,     "bgez",     OpC::I, &|_, _| 0),
+	 (Op::Bltzl,    "bltzl",    OpC::I, &|_, _| 0),
+	 (Op::Bgezl,    "bgezl",    OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
+	[(Op::Tgei,     "tgei",     OpC::I, &|_, _| 0),
+	 (Op::Tgeiu,    "tgeiu",    OpC::I, &|_, _| 0),
+	 (Op::Tlti,     "tlti",     OpC::I, &|_, _| 0),
+	 (Op::Tltiu,    "tltiu",    OpC::I, &|_, _| 0),
+	 (Op::Teqi,     "teqi",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Tnei,     "tnei",     OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
+	[(Op::Bltzal,   "bltzal",   OpC::I, &|_, _| 0),
+	 (Op::Bgezal,   "bgezal",   OpC::I, &|_, _| 0),
+	 (Op::Bltzall,  "bltzall",  OpC::I, &|_, _| 0),
+	 (Op::Bgezall,  "bgezall",  OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
+	[(Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _| 0)],
 ];
 
 struct Inst(pub u32);
@@ -235,6 +259,8 @@ impl Inst {
 		match t.0 {
 			Op::Special =>
 				SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize],
+			Op::RegImm =>
+				RI_OP_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize],
 			_ =>
 				t,
 		}
@@ -277,7 +303,7 @@ impl Inst {
 	}
 	/* Return's the function's funct field. */
 	pub fn funct(&self) -> u8 {
-		(self.0 & 0b11111) as u8
+		(self.0 & 0b111111) as u8
 	}
 	/* Return's the instruction's target field. */
 	pub fn target(&self) -> u32 {
