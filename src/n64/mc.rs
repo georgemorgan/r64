@@ -145,8 +145,6 @@ pub fn read(n64: &N64, addr: usize) -> u32 {
 	}
 }
 
-use std::io::Write;
-
 fn write32(val: u32, addr: usize, mem: &mut Box<[u8]>) {
 	/* Obtain a slice of bytes from the u32. */
 	let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];

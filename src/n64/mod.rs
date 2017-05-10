@@ -23,7 +23,7 @@ mod mc;
 
 #[repr(C, packed)]
 pub struct N64_ROM_HEADER {
-	pub PI_BSD_DOM1: u32,
+	pub pi_bsd_dom1: u32,
 	pub clock: u32,
 	pub pc: u32,
 	pub release: u32,
