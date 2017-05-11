@@ -68,7 +68,7 @@ pub struct N64 {
 
 impl N64 {
 	pub fn begin(&mut self) {
-		for _ in 0 .. 50 {
+		loop {
 			self.cpu.cycle(&mut self.mc);
 		}
 	}

@@ -1,13 +1,5 @@
 /* mc.rs - N64 Memory Controller */
 
-/*
-	Aggregates N64 system constants.
-	Handles reading from and writing to the console's memory map.
- */
-
-/* Access to the N64's memories. */
-use n64::N64;
-
 /* N64 memory sizes. */
 pub const N64_IRAM_SIZE: usize = 0x400000;
 pub const N64_ERAM_SIZE: usize = 0x400000;

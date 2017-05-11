@@ -1,5 +1,7 @@
 /* instruction.rs - Exposes a parsing object for a VR4300i instruction. */
 
+use std::fmt;
+
 use n64::cpu::op::*;
 use n64::cpu::GPR_NAMES;
 
@@ -18,17 +20,31 @@ impl Inst {
 	fn op_tup(&self) -> OpTup {
 		let t = self.op_tup_top();
 		match t.0 {
-			Op::Special =>
-				SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize],
-			Op::RegImm =>
-				RI_OP_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize],
-			Op::Cop0 =>
-				COP_OP_TABLE[((self.rs() >> 3) & 0b11) as usize][(self.rs() & 0b111) as usize],
+			Op::Special => SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize],
+			Op::RegImm => RI_OP_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize],
+			Op::Cop0 => {
+				let t = COP_OP_RS_TABLE[((self.rs() >> 3) & 0b11) as usize][(self.rs() & 0b111) as usize];
+				/* Check if the coprocessor instruction is Bc. */
+				match t.0 {
+					/* If the instruction is Bc, we have to get the extended opcode from the RT table. */
+					Op::Bc => {
+						COP_OP_RT_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize]
+					},
+					/* If the instruction is a Co instruction, then access it from the FN table. */
+					Op::Co => {
+						COP_OP_FN_TABLE[((self.funct() >> 3) & 0b11) as usize][(self.funct() & 0b111) as usize]
+					},
+					_ => t
+				}
+			},
 			Op::Cop1 => panic!("Attempt to resolve Cop1 instruction."),
 			Op::Cop2 => panic!("Attempt to resolve Cop2 instruction."),
-			_ =>
-				t,
+			_ => t,
 		}
+	}
+	/* Returns the kind of operation. */
+	pub fn kind(&self) -> Op {
+		self.op_tup_top().0
 	}
 	/* Returns the enumerated operation type. */
 	pub fn op(&self) -> Op {
@@ -37,7 +53,7 @@ impl Inst {
 	/* Returns a string of the opcode for debugging. */
 	pub fn op_str(&self) -> String {
 		let s = self.op_tup().1;
-		match self.op_tup_top().0 {
+		match self.kind() {
 			Op::Cop0 =>
 				format!("{}c0", s),
 			Op::Cop1 =>
@@ -88,8 +104,6 @@ impl Inst {
 		(self.0 & 0x3ffffff) as u64
 	}
 }
-
-use std::fmt;
 
 impl fmt::Display for Inst {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

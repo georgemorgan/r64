@@ -53,8 +53,6 @@ pub enum Op {
 	Co,			/* Co */	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */
 	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */	/* Co */
 
-	/* - UNIMPLEMENTED OPCODES - */
-
 	/* COPz rt opcodes. */
 	Bcf,		Bct,		Bcfl,		Bctl,		/**/		/**/		/**/		/**/
 	/**/		/**/		/**/		/**/		/**/		/**/		/**/		/**/
@@ -266,17 +264,17 @@ pub const RI_OP_TABLE: [[OpTup; 8]; 4] = [
 ];
 
 /* A constant 2-d array of the opcode values. */
-pub const COP_OP_TABLE: [[OpTup; 8]; 4] = [
-	[(Op::Mf,       "mf",       OpC::J, &|_, _, _| 0),
-	 (Op::Dmf,      "dmf",      OpC::J, &|_, _, _| 0),
-	 (Op::Cf,       "cf",       OpC::J, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::J, &|_, _, _| 0),
-	 (Op::Mt,       "mt",       OpC::I, &|_, _, _| 0),
-	 (Op::Dmt,      "dmt",      OpC::I, &|_, _, _| 0),
-	 (Op::Ct,       "ct",       OpC::I, &|_, _, _| 0),
+pub const COP_OP_RS_TABLE: [[OpTup; 8]; 4] = [
+	[(Op::Mf,       "mf",       OpC::R, &|_, _, _| 0),
+	 (Op::Dmf,      "dmf",      OpC::R, &|_, _, _| 0),
+	 (Op::Cf,       "cf",       OpC::R, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Mt,       "mt",       OpC::R, &|_, _, _| 0),
+	 (Op::Dmt,      "dmt",      OpC::R, &|_, _, _| 0),
+	 (Op::Ct,       "ct",       OpC::R, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
 
-	[(Op::Bc,       "bc",       OpC::I, &|_, _, _| 0),
+	[(Op::Bc,       "bc",       OpC::B, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
@@ -285,16 +283,94 @@ pub const COP_OP_TABLE: [[OpTup; 8]; 4] = [
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
 
-	[(Op::Co,   	"co",       OpC::J, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::J, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::J, &|_, _, _| 0),
-	 (Op::Reserved, "reserved", OpC::J, &|_, _, _| 0),
+	[(Op::Co,   	"co",       OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
 
 	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+];
+
+/* A constant 2-d array of the opcode values. */
+pub const COP_OP_RT_TABLE: [[OpTup; 8]; 4] = [
+	[(Op::Bcf,      "bcf",      OpC::R, &|_, _, _| 0),
+	 (Op::Bct,      "bct",      OpC::R, &|_, _, _| 0),
+	 (Op::Bcfl,     "bcfl",     OpC::R, &|_, _, _| 0),
+	 (Op::Bctl,     "bctl", 	OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+];
+
+/* A constant 2-d array of the opcode values. */
+pub const COP_OP_FN_TABLE: [[OpTup; 8]; 4] = [
+	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Tlbr,     "tlbr",     OpC::R, &|_, _, _| 0),
+	 (Op::Tlbwi,    "tlbwi",    OpC::R, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Tlbwr,    "tlbwr",    OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Tlbp,     "tlbp",     OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
+	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0)],
+
+	[(Op::Eret,     "eret",     OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),
 	 (Op::Reserved, "reserved", OpC::I, &|_, _, _| 0),

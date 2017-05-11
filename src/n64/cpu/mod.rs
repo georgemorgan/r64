@@ -13,17 +13,6 @@ CPU0
   06h = a2/reg6     0Eh = t6/reg14    16h = s6/reg22    1Eh = s8/reg30
   07h = a3/reg7     0Fh = t7/reg15    17h = s7/reg23    1Fh = ra/reg31
 
-COP0
-
-  00h = Index       08h = BadVAddr    10h = Config      18h = *RESERVED*
-  01h = Random      09h = Count       11h = LLAddr      19h = *RESERVED*
-  02h = EntryLo0    0Ah = EntryHi     12h = WatchLo     1Ah = PErr
-  03h = EntryLo1    0Bh = Compare     13h = WatchHi     1Bh = CacheErr
-  04h = Context     0Ch = Status      14h = XContext    1Ch = TagLo
-  05h = PageMask    0Dh = Cause       15h = *RESERVED*  1Dh = TagHi
-  06h = Wired       0Eh = EPC         16h = *RESERVED*  1Eh = ErrorEPC
-  07h = *RESERVED*  0Fh = PRevID      17h = *RESERVED*  1Fh = *RESERVED*
-
 */
 
 use std::fmt;
@@ -110,124 +99,163 @@ impl CPU {
 		let rt = i.function()(0, rs, imm);
 		/* Write the result back into the target register. */
 		self.wgpr(rt, i.rt());
-		/* Increment the program counter. */
-		self.pc += 4;
 	}
 	/* Handler for the load/store subclass of the I-type instructions. */
 	fn exec_ldst(&mut self, mc: &mut MC, i: Inst) {
-		/* Obtain the base address. */
-		let base = self.rgpr(i.rs());
-		/* Obtain the offset. */
-		let offset = i.offset();
+		/* Obtain the base and offset addresses. */
+		let base = self.rgpr(i.rs()) as i64;
+		let offset = (i.offset() as i16 as i64) << 2;
 		/* Are we loading or storing? */
 		match i.class() {
 			OpC::L => {
-				let val = mc.read((base + offset as u64) as usize) as u64;
+				/* Read the memory address. */
+				let val = mc.read((base + offset) as usize) as u64;
 				/* Let the instruction's function determine the value we write. */
 				let rt = i.function()(val, 0, 0);
 				/* Write the result back into the target register. */
 				self.wgpr(rt, i.rt());
 			},
 			OpC::S => {
-				/* Obtain the value to be stored. */
+				/* Obtain the value that is to be stored. */
 				let rt = self.rgpr(i.rt());
-				/* Let the function mutate this value as needed. */
+				/* Let the function mutate this value as required. */
 				let val = i.function()(rt, 0, 0) as u32;
 				/* Write the result into memory. */
-				mc.write(val, (base + offset as u64) as usize);
+				mc.write(val, (base + offset) as usize);
 			},
 			_ => ()
 		}
-		/* Increment the program counter. */
-		self.pc += 4;
-	}
-	/* Handler for the jump (J-Type) instructions. */
-	fn exec_jump(&mut self, i: Inst) {
-
 	}
 	/* Handler for the branch subclass of the J-type instructions. */
-	fn exec_branch(&mut self, i: Inst) {
-		/* Obtain the value of rs. */
+	fn exec_branch(&mut self, i: Inst) -> bool {
+		/* Obtain the value stored in the rs and rt registers. */
 		let rs = self.rgpr(i.rs());
-		/* Obtain the value of rt. */
 		let rt = self.rgpr(i.rt());
 		/* Obtain the offset address. */
 		let offset = (i.offset() as i16 as i64) << 2;
 		/* Determine whether or not the branch should occur .*/
 		let should_branch = i.function()(rt, rs, 0);
 		/* Perform the branch. */
-		if should_branch > 0{
+		if should_branch > 0 {
 			self.pc = (self.pc as i64 + offset) as u64;
-		} else {
-			/* Increment the program counter. */
-			self.pc += 4;
+			/* Don't inrement the PC. */
+			return false;
 		}
+		/* Increment the PC if the branch fell through. */
+		true
 	}
 	/* Handler for the register (R-Type) instructions. */
 	fn exec_reg(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs and rt registers. */
 		let rs = self.rgpr(i.rs());
 		let rt = self.rgpr(i.rt());
-		/* Perform the operation. */
+		/* Obtain the value that is to be placed in rd. */
 		let rd = i.function()(rt, rs, i.sa());
 		/* Write the result back into the destination register. */
 		self.wgpr(rd, i.rd());
-		/* Increment the program counter. */
-		self.pc += 4;
 	}
-
 	/* Executes an instruction. */
 	pub fn cycle(&mut self, mc: &mut MC) {
 		/* Fetch the next instrution from memory. */
 		let i = Inst(mc.read(self.pc as usize));
 		/* Print the opcode. */
 		println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
-		/* Execute the instrution. */
-		match i.op() {
-			/* Handle the jump instructions here. */
-			Op::J => {
-				/* Obtain the jump target. */
-				let target = i.target();
-				/* Load the target into the program counter. */
-				self.pc = target;
+		/* Whether or not the PC should be incremented. */
+		let mut inc_pc = true;
+		/* Determine if the instrution needs to be performed on a co-processor. */
+		match i.kind() {
+			/* If the instruction is a co-processor instruction, perform it. */
+			Op::Cop0 => {
+				match i.op() {
+					Op::Mf => {
+						()
+					}, Op::Dmf => {
+						()
+					}, Op::Cf => {
+						()
+					}, Op::Mt => {
+						()
+					}, Op::Dmt => {
+						()
+					}, Op::Ct => {
+						()
+					}, Op::Bcf => {
+						()
+					}, Op::Bct => {
+						()
+					}, Op::Bcfl => {
+						()
+					}, Op::Bctl => {
+						()
+					}, Op::Tlbr => {
+						()
+					}, Op::Tlbwi => {
+						()
+					}, Op::Tlbwr => {
+						()
+					}, Op::Tlbp => {
+						()
+					}, Op::Eret => {
+						()
+					}, _ => ()
+				}
 			},
-			Op::Jal => {
-				/* Obtain the jump target. */
-				let target = i.target();
-				/* Load the program counter into the return address. */
-				let pc = self.pc;
-				self.wgpr(pc, 31);
-				/* Load the target into the program counter. */
-				self.pc = target;
-			},
-			Op::Jr => {
-				/* Obtain the jump target. */
-				let target = self.rgpr(i.rs());
-				/* Load the program counter into the return address. */
-				self.pc = target;
-			},
-			Op::Jalr => {
-				/* Obtain the jump target. */
-				let target = self.rgpr(i.rs());
-				/* Load the program counter into the destination register. */
-				let pc = self.pc;
-				self.wgpr(pc, i.rd());
-				/* Load the program counter into the return address. */
-				self.pc = target;
-			},
-			Op::Reserved => panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
-			_ => match i.class() {
-				OpC::I =>
-					self.exec_imm(i),
-				OpC::L | OpC::S =>
-					self.exec_ldst(mc, i),
-				OpC::J =>
-					self.exec_jump(i),
-				OpC::B =>
-					self.exec_branch(i),
-				OpC::R =>
-					self.exec_reg(i),
+			_ => match i.op() {
+				/* Handle the jump (J-type) instructions here. */
+				Op::J => {
+					/* Obtain the jump target. */
+					let target = i.target();
+					/* Load the target into the program counter. */
+					self.pc = target;
+					/* Don't increment the PC. */
+					inc_pc = false;
+				}, Op::Jal => {
+					/* Obtain the jump target. */
+					let target = i.target();
+					/* Load the program counter into the return address. */
+					let pc = self.pc;
+					self.wgpr(pc, 31);
+					/* Load the target into the program counter. */
+					self.pc = target;
+					/* Don't increment the PC. */
+					inc_pc = false;
+				}, Op::Jr => {
+					/* Obtain the jump target. */
+					let target = self.rgpr(i.rs());
+					/* Load the program counter into the return address. */
+					self.pc = target;
+					/* Don't increment the PC. */
+					inc_pc = false;
+				}, Op::Jalr => {
+					/* Obtain the jump target. */
+					let target = self.rgpr(i.rs());
+					/* Load the program counter into the destination register. */
+					let pc = self.pc;
+					self.wgpr(pc, i.rd());
+					/* Load the program counter into the return address. */
+					self.pc = target;
+					/* Don't increment the PC. */
+					inc_pc = false;
+				}, Op::Reserved => panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
+				/* Execute all other instructions based on this pattern. */
+				_ => match i.class() {
+					OpC::I =>
+						self.exec_imm(i),
+					OpC::L | OpC::S =>
+						self.exec_ldst(mc, i),
+					OpC::B => {
+						inc_pc = self.exec_branch(i);
+					},
+					OpC::R =>
+						self.exec_reg(i),
+					_ => ()
+				}
 			}
+		}
+		/* Increment the program counter if necessary. */
+		if inc_pc {
+			/* Increment the program counter. */
+			self.pc += 4;
 		}
 		//println!("{:?}", self);
 	}
@@ -251,13 +279,13 @@ impl fmt::Debug for CPU {
 			try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
 		}
 
-		try!(write!(f, "\n\nCPU Floating Point Registers:"));
-		for r in 0..GPR_SIZE {
-			if (r % REGS_PER_LINE) == 0 {
-				try!(writeln!(f, ""))
-			}
-			try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
-		}
+		// try!(write!(f, "\n\nCPU Floating Point Registers:"));
+		// for r in 0..GPR_SIZE {
+		// 	if (r % REGS_PER_LINE) == 0 {
+		// 		try!(writeln!(f, ""))
+		// 	}
+		// 	try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
+		// }
 
 		Ok(())
 
