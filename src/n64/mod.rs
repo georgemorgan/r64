@@ -1,6 +1,4 @@
-/* n64.rs - Umbrella Module */
-
-/* A top-level module that concatenates the sub-modules of the emulator. */
+/* n64.rs - A top-level module that concatenates the sub-modules of the emulator. */
 
 mod vi;
 use self::vi::VI;
