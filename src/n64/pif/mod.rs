@@ -1,5 +1,3 @@
-use n64::mc;
-
 pub struct PIF {
 
 }

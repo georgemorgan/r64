@@ -24,10 +24,9 @@ COP0
   06h = Wired       0Eh = EPC         16h = *RESERVED*  1Eh = ErrorEPC
   07h = *RESERVED*  0Fh = PRevID      17h = *RESERVED*  1Fh = *RESERVED*
 
- */
+*/
 
- use n64::N64;
- use n64::mc::MC;
+use n64::mc::MC;
 
 #[derive(Copy, Clone)]
 /* Possible opcode classes. */
@@ -590,7 +589,7 @@ impl CPU {
 				/* Obtain the jump target. */
 				let target = self.rgpr(i.rs());
 				/* Load the program counter into the return address. */
-				let pc = self.pc;
+				self.pc = target;
 			},
 			Op::Jalr => {
 				/* Obtain the jump target. */
@@ -599,7 +598,7 @@ impl CPU {
 				let pc = self.pc;
 				self.wgpr(pc, i.rd());
 				/* Load the program counter into the return address. */
-				let pc = self.pc;
+				self.pc = target;
 			},
 			Op::Reserved => panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
 			_ => match i.class() {
