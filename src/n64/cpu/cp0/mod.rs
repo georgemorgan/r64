@@ -17,6 +17,8 @@ COP0
 
 use n64::cpu::GPR_SIZE;
 
+const CP0_CONFIG: usize = 0x10;
+
 pub struct CP0 {
 	/* The CPU's general purpose register file. */
 	regs: [u64; GPR_SIZE],

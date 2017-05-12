@@ -92,7 +92,7 @@ pub const OP_TABLE: [[OpTup; 8]; 8] = [
 	 (Op::Andi,     "andi",     OpC::I, &|_, rs, imm| rs & imm as u64),
 	 (Op::Ori,      "ori",      OpC::I, &|_, rs, imm| rs | imm as u64),
 	 (Op::Xori,     "xori",     OpC::I, &|_, rs, imm| rs ^ imm as u64),
-	 (Op::Lui,      "lui",      OpC::I, &|_, rs, imm| (imm as u64) << 16)],
+	 (Op::Lui,      "lui",      OpC::I, &|_, rs, imm| (imm as i16 as i64 as u64) << 16)],
 
 	[(Op::Cop0,     "cop0",     OpC::I, &|_, _, _| 0),
 	 (Op::Cop1,     "cop1",     OpC::I, &|_, _, _| 0),
