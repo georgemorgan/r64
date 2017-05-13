@@ -220,7 +220,7 @@ impl CPU {
 fn exec_ldst(n64: &mut N64, i: Inst) {
 	/* Obtain the base and offset addresses. */
 	let base = n64.cpu.rgpr(i.rs()) as i32;
-	let offset = (i.offset() as i16 as i32) << 2;
+	let offset = i.offset() as i16 as i32;
 	/* Are we loading or storing? */
 	match i.class() {
 		OpC::L => {

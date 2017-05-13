@@ -53,13 +53,23 @@ const RDRAM_MEM_END: u32 = 0x003E_FFFF;
 const RDRAM_REG_START: u32 = 0x03F0_0000;
 const RDRAM_REG_END: u32 = 0x03FF_FFFF;
 
+/* RSP memory. */
+
+const SP_DMEM_START: u32 = 0x0400_0000;
+const SP_DMEM_END: u32 = 0x0400_0FFF;
+const SP_IMEM_START: u32 = 0x0400_1000;
+const SP_IMEM_END: u32 = 0x0400_1FFF;
+
 /* RSP registers. */
-const RSP_REG_START: u32 = 0x0400_0000;
-const RSP_REG_END: u32 = 0x040F_FFFF;
+
+const SP_REG_START: u32 = 0x0404_0000;
+const SP_REG_END: u32 = 0x0404_0018;
 
 /* RDP registers. */
+
 const RDP_CMD_START: u32 = 0x0410_0000;
 const RDP_CMD_END: u32 = 0x041F_FFFF;
+
 const RDP_SPAN_START: u32 = 0x0420_0000;
 const RDP_SPAN_END: u32 = 0x042F_FFFF;
 
@@ -141,6 +151,37 @@ pub struct N64_ROM_HEADER {
 }
 pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 
+/* Reads a 32-bit word from a boxed slice of u8s. */
+fn rmem(addr: u32, mem: &Box<[u8]>) -> u32 {
+	/* Obtain a slice starting at the read address. */
+	let b: &[u8] = &mem[addr as usize .. addr as usize + 4];
+	/* Extract each of the word's bytes and use them to create a u32. */
+	let w = ((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | b[3] as u32;
+	/* Byte swap and adjust the endianness of the read word. */
+	u32::from_be(w.swap_bytes())
+}
+
+/* Writes a 32-bit word to a boxed slice of u8s. */
+fn wmem(val: u32, addr: u32, mem: &mut Box<[u8]>) {
+	/* Obtain a slice of bytes from the u32. */
+	let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
+	/* Write the slice into memory. */
+	mem[addr as usize .. addr as usize + 4].copy_from_slice(from);
+}
+
+/* Convers a virtual address to a physical address. */
+fn vtop(vaddr: u32) -> u32 {
+	match vaddr {
+		/* Direct mapped segment KSEG0. */
+		KSEG0_START ... KSEG0_END =>
+			vaddr - KSEG0_START,
+		/* Direct mapped segment KSEG1. */
+		KSEG1_START ... KSEG1_END =>
+			vaddr - KSEG1_START,
+		_ => panic!("Unrecognized virtual address: {:#x}", vaddr)
+	}
+}
+
 pub struct N64 {
 
 	/* Memories */
@@ -172,15 +213,10 @@ pub struct N64 {
 	/* CPU-NUS */
 
 	/* Virtual VR4300 MIPS 64-bit CPU. */
-	pub cpu: CPU,
+	pub cpu: CPU
 }
 
 impl N64 {
-	pub fn begin(&mut self) {
-		loop {
-
-		}
-	}
 	/* Initializer for the N64 umbrella module. */
 	/* > Accepts a cartridge ROM slice (cr) and a PIF ROM slice (pr). */
 	pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
@@ -213,11 +249,15 @@ impl N64 {
 		/* Match the memory address to a peripheral address range. */
 		match paddr {
 			RDRAM_MEM_START ... RDRAM_MEM_END =>
-				read32(paddr - RDRAM_MEM_START, &self.iram),
+				rmem(paddr - RDRAM_MEM_START, &self.iram),
 			RDRAM_REG_START ... RDRAM_REG_END =>
 				unimplemented!(),
-			RSP_REG_START ... RSP_REG_END =>
-				unimplemented!(),
+			SP_REG_START ... SP_REG_END =>
+				self.rsp.rreg(paddr),
+			SP_DMEM_START ... SP_DMEM_END =>
+				rmem(paddr - SP_DMEM_START, &self.rsp.dmem),
+			SP_IMEM_START ... SP_IMEM_END =>
+				rmem(paddr - SP_DMEM_START, &self.rsp.imem),
 			RDP_CMD_START ... RDP_CMD_END =>
 				unimplemented!(),
 			RDP_SPAN_START ... RDP_SPAN_END =>
@@ -237,21 +277,21 @@ impl N64 {
 			UNUSED_START ... UNUSED_END =>
 				panic!("Attempt to read from unused address space."),
 			CART_DOM2_A1_START ... CART_DOM2_A1_END =>
-				read32(paddr - CART_DOM2_A1_START, &self.crom),
+				rmem(paddr - CART_DOM2_A1_START, &self.crom),
 			CART_DOM1_A1_START ... CART_DOM1_A1_END =>
-				read32(paddr - CART_DOM1_A1_START, &self.crom),
+				rmem(paddr - CART_DOM1_A1_START, &self.crom),
 			CART_DOM2_A2_START ... CART_DOM2_A2_END =>
-				read32(paddr - CART_DOM2_A2_START, &self.crom),
+				rmem(paddr - CART_DOM2_A2_START, &self.crom),
 			CART_DOM1_A2_START ... CART_DOM1_A2_END =>
-				read32(paddr - CART_DOM1_A2_START, &self.crom),
+				rmem(paddr - CART_DOM1_A2_START, &self.crom),
 			PIF_ROM_START ... PIF_ROM_END =>
-				read32(paddr - PIF_ROM_START, &self.pif.prom),
+				rmem(paddr - PIF_ROM_START, &self.pif.prom),
 			PIF_RAM_START ... PIF_RAM_END =>
-				read32(paddr - PIF_RAM_START, &self.pif.pram),
+				rmem(paddr - PIF_RAM_START, &self.pif.pram),
 			RESERVED_START ... RESERVED_END =>
 				panic!("Attempt to read from a reserved location {:#x}.", paddr),
 			CART_DOM1_A3_START ... CART_DOM1_A3_END =>
-				read32(paddr - CART_DOM1_A3_START, &self.crom),
+				rmem(paddr - CART_DOM1_A3_START, &self.crom),
 			SYSAD_START ... SYSAD_END =>
 				unimplemented!(),
 			_ => panic!("Read from unrecognized physical address: {:#x}", paddr)
@@ -264,11 +304,15 @@ impl N64 {
 		/* Match the memory address to a peripheral address range. */
 		match paddr {
 			RDRAM_MEM_START ... RDRAM_MEM_END =>
-				write32(val, paddr - RDRAM_MEM_START, &mut self.iram),
+				wmem(val, paddr - RDRAM_MEM_START, &mut self.iram),
 			RDRAM_REG_START ... RDRAM_REG_END =>
 				unimplemented!(),
-			RSP_REG_START ... RSP_REG_END =>
-				unimplemented!(),
+			SP_DMEM_START ... SP_DMEM_END =>
+				wmem(paddr - SP_DMEM_START, val, &mut self.rsp.dmem),
+			SP_IMEM_START ... SP_IMEM_END =>
+				wmem(paddr - SP_DMEM_START, val, &mut self.rsp.imem),
+			SP_REG_START ... SP_REG_END =>
+				self.rsp.wreg(paddr - SP_REG_START),
 			RDP_CMD_START ... RDP_CMD_END =>
 				unimplemented!(),
 			RDP_SPAN_START ... RDP_SPAN_END =>
@@ -295,41 +339,12 @@ impl N64 {
 			PIF_ROM_START ... PIF_ROM_END =>
 				panic!("Attempt to write to a read-only location {:#x}.", paddr),
 			PIF_RAM_START ... PIF_RAM_END =>
-				write32(val, paddr - PIF_RAM_START, &mut self.pif.pram),
+				wmem(val, paddr - PIF_RAM_START, &mut self.pif.pram),
 			RESERVED_START ... RESERVED_END =>
 				panic!("Attempt to write to a reserved location {:#x}.", paddr),
 			SYSAD_START ... SYSAD_END =>
 				unimplemented!(),
 			_ => panic!("Write to unrecognized physical address: {:#x}", paddr)
 		}
-	}
-}
-
-fn read32(addr: u32, mem: &Box<[u8]>) -> u32 {
-	/* Obtain a slice starting at the read address. */
-	let b: &[u8] = &mem[addr as usize .. addr as usize + 4];
-	/* Extract each of the word's bytes and use them to create a u32. */
-	let w = ((b[0] as u32) << 24) | ((b[1] as u32) << 16) | ((b[2] as u32) << 8) | b[3] as u32;
-	/* Byte swap and adjust the endianness of the read word. */
-	u32::from_be(w.swap_bytes())
-}
-
-fn write32(val: u32, addr: u32, mem: &mut Box<[u8]>) {
-	/* Obtain a slice of bytes from the u32. */
-	let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
-	/* Write the slice into memory. */
-	mem[addr as usize .. addr as usize + 4].copy_from_slice(from);
-}
-
-/* Convers a virtual address to a physical address. */
-fn vtop(vaddr: u32) -> u32 {
-	match vaddr {
-		/* Direct mapped segment KSEG0. */
-		KSEG0_START ... KSEG0_END =>
-			vaddr - KSEG0_START,
-		/* Direct mapped segment KSEG1. */
-		KSEG1_START ... KSEG1_END =>
-			vaddr - KSEG1_START,
-		_ => panic!("Unrecognized virtual address: {:#x}", vaddr)
 	}
 }
