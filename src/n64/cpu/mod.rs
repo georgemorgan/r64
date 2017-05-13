@@ -134,32 +134,6 @@ impl CPU {
 			_ => ()
 		}
 	}
-	/* Handler for the load/store subclass of the I-type instructions. */
-	fn exec_ldst(&mut self, n64: &mut N64, i: Inst) {
-		/* Obtain the base and offset addresses. */
-		let base = self.rgpr(i.rs()) as i32;
-		let offset = (i.offset() as i16 as i32) << 2;
-		/* Are we loading or storing? */
-		match i.class() {
-			OpC::L => {
-				/* Read the memory address. */
-				let val = n64.read((base + offset) as u32) as u64;
-				/* Let the instruction's function determine the value we write. */
-				let rt = i.function()(val, 0, 0);
-				/* Write the result back into the target register. */
-				self.wgpr(rt, i.rt());
-			},
-			OpC::S => {
-				/* Obtain the value that is to be stored. */
-				let rt = self.rgpr(i.rt());
-				/* Let the function mutate this value as required. */
-				let val = i.function()(rt, 0, 0) as u32;
-				/* Write the result into memory. */
-				n64.write(val, (base + offset) as u32);
-			},
-			_ => ()
-		}
-	}
 	/* Handler for the branch subclass of the J-type instructions. */
 	fn exec_branch(&mut self, i: Inst) -> bool {
 		/* Obtain the value stored in the rs and rt registers. */
@@ -240,47 +214,73 @@ impl CPU {
 			}, _ => ()
 		}
 	}
-	/* Executes an instruction on the CPU. */
-	pub fn cycle(&mut self, n64: &mut N64) {
-		/* Fetch the next instrution from memory. */
-		let i = Inst(n64.read(self.pc as u32));
-		/* Print the opcode. */
-		println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
-		/* Whether or not the PC should be incremented. */
-		let mut inc_pc = true;
-		/* Determine if the instrution needs to be performed on a co-processor. */
-		match i.kind() {
-			/* If the instruction is a co-processor instruction, perform it on CPz. */
-			Op::Cop0 =>
-				self.exec_cop0(i),
-			Op::Cop1 =>
-				unimplemented!(),
-			Op::Cop2 =>
-				panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor."),
-			Op::Reserved =>
-				panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
-			_ => match i.class() {
-				OpC::I =>
-					self.exec_imm(i),
-				OpC::L | OpC::S =>
-					self.exec_ldst(n64, i),
-				OpC::J => {
-					self.exec_jump(i);
-					inc_pc = false;
-				},
-				OpC::B => {
-					inc_pc = self.exec_branch(i);
-				},
-				OpC::R =>
-					self.exec_reg(i)
-			}
+}
+
+/* Handler for the load/store subclass of the I-type instructions. */
+fn exec_ldst(n64: &mut N64, i: Inst) {
+	/* Obtain the base and offset addresses. */
+	let base = n64.cpu.rgpr(i.rs()) as i32;
+	let offset = (i.offset() as i16 as i32) << 2;
+	/* Are we loading or storing? */
+	match i.class() {
+		OpC::L => {
+			/* Read the memory address. */
+			let val = n64.read((base + offset) as u32) as u64;
+			/* Let the instruction's function determine the value we write. */
+			let rt = i.function()(val, 0, 0);
+			/* Write the result back into the target register. */
+			n64.cpu.wgpr(rt, i.rt());
+		},
+		OpC::S => {
+			/* Obtain the value that is to be stored. */
+			let rt = n64.cpu.rgpr(i.rt());
+			/* Let the function mutate this value as required. */
+			let val = i.function()(rt, 0, 0) as u32;
+			/* Write the result into memory. */
+			n64.write(val, (base + offset) as u32);
+		},
+		_ => ()
+	}
+}
+
+pub fn cycle(n64: &mut N64) {
+	/* Fetch the next instrution from memory. */
+	let i = Inst(n64.read(n64.cpu.pc as u32));
+	/* Print the opcode. */
+	println!("{:#x}: ({:#x}) {}", n64.cpu.pc, i.0, i);
+	/* Whether or not the PC should be incremented. */
+	let mut inc_pc = true;
+	/* Determine if the instrution needs to be performed on a co-processor. */
+	match i.kind() {
+		/* If the instruction is a co-processor instruction, perform it on CPz. */
+		Op::Cop0 =>
+			n64.cpu.exec_cop0(i),
+		Op::Cop1 =>
+			unimplemented!(),
+		Op::Cop2 =>
+			panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor."),
+		Op::Reserved =>
+			panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
+		_ => match i.class() {
+			OpC::I =>
+				n64.cpu.exec_imm(i),
+			OpC::L | OpC::S =>
+				exec_ldst(n64, i),
+			OpC::J => {
+				n64.cpu.exec_jump(i);
+				inc_pc = false;
+			},
+			OpC::B => {
+				inc_pc = n64.cpu.exec_branch(i);
+			},
+			OpC::R =>
+				n64.cpu.exec_reg(i)
 		}
-		/* Increment the program counter if necessary. */
-		if inc_pc {
-			/* Increment the program counter. */
-			self.pc += 4;
-		}
-		println!("{:?}\n", n64.cpu);
+	}
+	/* Increment the program counter if necessary. */
+	if inc_pc {
+		/* Increment the program counter. */
+		n64.cpu.pc += 4;
 	}
 }
 

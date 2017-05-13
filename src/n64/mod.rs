@@ -14,7 +14,7 @@ mod rdp;
 use self::rdp::RDP;
 mod pif;
 use self::pif::PIF;
-mod cpu;
+pub mod cpu;
 use self::cpu::CPU;
 
 /* N64 memory sizes. */
@@ -172,13 +172,13 @@ pub struct N64 {
 	/* CPU-NUS */
 
 	/* Virtual VR4300 MIPS 64-bit CPU. */
-	cpu: CPU,
+	pub cpu: CPU,
 }
 
 impl N64 {
 	pub fn begin(&mut self) {
 		loop {
-			
+
 		}
 	}
 	/* Initializer for the N64 umbrella module. */
