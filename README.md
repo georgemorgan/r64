@@ -5,7 +5,7 @@ r64
 
 r64 is an abbreviation of `Rust 64` which is an abbreviation of `Rust Nintendo 64` which loosely translates to `Nintendo 64 of Rust` which can be interpreted as `Nintendo 64 emulator written using the Rust programming language.`.
 
-I wanted to brush up on my Rust skills, and I figured that a good way to do that would be to start a project that relied heavily on the use of Rust's systems programming concepts. Rather than putting Rust on hardware (which I will do at some point in the near future), I decided to use Rust to make hardware. I've written a a 6502 emulator in the context of the NES in the past, so I wanted something a bit more challenging this time around. N64 played a huge role in my childhood, so it seemed like a logical choice.
+I wanted to brush up on my Rust skills, and I figured that a good way to do that would be to start a project that relied heavily on the use of Rust's systems programming concepts. Rather than putting Rust on hardware (which I will do at some point in the near future), I decided to use Rust to make hardware. I've written a 6502 emulator in the context of the NES in the past, so I wanted something a bit more challenging this time around. N64 played a huge role in my childhood, so it seemed like a logical choice.
 
 This emulator has no goals for dynamic recompilation, cycle accuracy, or constraints for timing. Hence, it is a verbose and unoptimized Nintendo 64 emulator. My goal is, quite simply, to boot Super Mario 64 and see a wireframe of the rendered polygons - no textures, shading, or fancyness. If I get to this point, I may throw in audio emulation, and from there work my way towards a functional RCP.
 
