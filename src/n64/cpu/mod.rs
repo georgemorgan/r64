@@ -64,14 +64,17 @@ impl CPU {
 			pc: pc
 		}
 	}
+
 	/* Reads a value from the specified GPR. */
 	fn rgpr(&self, reg: usize) -> u64 {
 		self.gpr[reg]
 	}
+
 	/* Reads a value from the specified FPR. */
 	fn rfpr(&self, reg: usize) -> f64 {
 		self.fpr[reg]
 	}
+
 	/* Writes a value to the specified GPR. */
 	fn wgpr(&mut self, val: u64, reg: usize) {
 		/* Don't write to register 0. */
@@ -82,6 +85,7 @@ impl CPU {
 			},
 		}
 	}
+
 	/* Writes a value to the specified FPR. */
 	fn wfpr(&mut self, val: f64, reg: usize) {
 		self.fpr[reg] = val;
@@ -100,6 +104,7 @@ impl CPU {
 		/* Write the result back into the target register. */
 		self.wgpr(rt, i.rt());
 	}
+
 	/* Handler for the jump (J-type) instructions. */
 	fn exec_jump(&mut self, i: Inst) {
 		match i.op() {
@@ -130,10 +135,10 @@ impl CPU {
 				self.wgpr(pc, i.rd());
 				/* Load the program counter into the return address. */
 				self.pc = target;
-			},
-			_ => ()
+			}, _ => ()
 		}
 	}
+
 	/* Handler for the branch subclass of the J-type instructions. */
 	fn exec_branch(&mut self, i: Inst) -> bool {
 		/* Obtain the value stored in the rs and rt registers. */
@@ -146,12 +151,13 @@ impl CPU {
 		/* Perform the branch. */
 		if should_branch > 0 {
 			self.pc = (self.pc as i32 + offset) as u64;
-			/* Don't inrement the PC. */
+			/* Don't increment the PC. */
 			return false;
 		}
 		/* Increment the PC if the branch fell through. */
 		true
 	}
+
 	/* Handler for the register (R-Type) instructions. */
 	fn exec_reg(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs and rt registers. */
@@ -162,6 +168,7 @@ impl CPU {
 		/* Write the result back into the destination register. */
 		self.wgpr(rd, i.rd());
 	}
+
 	/* Handler for the coprocessor0 instructions. */
 	fn exec_cop0(&mut self, i: Inst) {
 		match i.op() {
@@ -234,7 +241,7 @@ fn exec_ldst(n64: &mut N64, i: Inst) {
 		OpC::S => {
 			/* Obtain the value that is to be stored. */
 			let rt = n64.cpu.rgpr(i.rt());
-			/* Let the function mutate this value as required. */
+			/* Let the function mutate this value as required1 . */
 			let val = i.function()(rt, 0, 0) as u32;
 			/* Write the result into memory. */
 			n64.write(val, (base + offset) as u32);
