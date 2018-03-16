@@ -80,6 +80,9 @@ const RESERVED: OpTup = (Op::Reserved, "reserved", OpC::R, &|_, _, _| {
 
 /* A constant 2-d array of the opcode values. */
 pub const OP_TABLE: [[&OpTup; 8]; 8] = [
+
+    /* ROW: 0 */
+
 	[&(Op::Special, "special", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -111,6 +114,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Bgtz, "bgtz", OpC::B, &|rt, rs, _| {
 		unimplemented!()
 	})],
+
+	/* ROW: 1 */
 
 	[&(Op::Addi, "addi", OpC::I, &|_, rs, imm| {
 		rs + (imm as i16) as u64
@@ -144,6 +149,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 		(imm as i16 as i64 as u64) << 16
 	})],
 
+	/* ROW: 2 */
+
 	[&(Op::Cop0, "cop0", OpC::I, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -157,6 +164,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	}),
 
 	&RESERVED,
+
 	&(Op::Beql, "beql", OpC::B, &|rt, rs, _| {
 		if rt == rs { 1 } else { 0 }
 	}),
@@ -172,6 +180,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Bgtzl, "bgtzl", OpC::B, &|rt, rs, _| {
 		if (rs as i64) > 0 { 1 } else { 0 }
 	})],
+
+	/* ROW: 3 */
 
 	[&(Op::Daddi, "daddi", OpC::I, &|_, rs, imm| {
 		unimplemented!()
@@ -193,6 +203,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED],
+
+	/* ROW: 4 */
 
 	[&(Op::Lb, "lb", OpC::L, &|val, _, _| {
 		(val & 0xff) as i8 as i64 as u64
@@ -223,6 +235,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	}),
 
 	&(Op::Lwu, "lwu", OpC::L, &|val, _, _| val as u32 as u64)],
+
+	/* ROW: 5 */
 
 	[&(Op::Sb, "sb", OpC::S, &|rt, _, _| {
 		(rt & 0xff) as u64
@@ -256,6 +270,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 		unimplemented!()
 	})],
 
+	/* ROW: 6 */
+
 	[&(Op::Ll, "ll", OpC::L, &|val, _, _| {
 		unimplemented!()
 	}),
@@ -285,6 +301,8 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Ld, "ld", OpC::L, &|val, _, _| {
 		unimplemented!()
 	})],
+
+	/* ROW: 7 */
 
 	[&(Op::Sc, "sc", OpC::S, &|rt, _, _| {
 		unimplemented!()
@@ -317,11 +335,15 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
 /* A constant 2-d array of the opcode values. */
 pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
+
+    /* ROW: 0 */
+
 	[&(Op::Sll, "sll", OpC::R, &|rt, rs, sa| {
 		unimplemented!()
 	}),
 
 	&RESERVED,
+
 	&(Op::Srl, "srl", OpC::R, &|rt, rs, sa| {
 		unimplemented!()
 	}),
@@ -335,6 +357,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 	}),
 
 	&RESERVED,
+
 	&(Op::Srlv, "srlv", OpC::R, &|rt, rs, sa| {
 		unimplemented!()
 	}),
@@ -342,6 +365,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Srav, "srav", OpC::R, &|rt, rs, sa| {
 		unimplemented!()
 	})],
+
+	/* ROW: 1 */
 
 	[&(Op::Jr, "jr", OpC::J, &|_, _, _| {
 		unimplemented!()
@@ -353,6 +378,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
 	&RESERVED,
 	&RESERVED,
+
 	&(Op::Syscall, "syscall", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -362,9 +388,12 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 	}),
 
 	&RESERVED,
+
 	&(Op::Sync, "sync", OpC::R, &|_, _, _| {
 		unimplemented!()
 	})],
+
+	/* ROW: 2 */
 
 	[&(Op::Mfhi, "mfhi", OpC::R, &|_, _, _| {
 		unimplemented!()
@@ -398,6 +427,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 		unimplemented!()
 	})],
 
+	/* ROW: 3 */
+
 	[&(Op::Mult, "mult", OpC::R, &|rt, rs, _| {
 		unimplemented!()
 	}),
@@ -429,6 +460,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Ddivu	, "ddivu", OpC::R, &|rt, rs, _| {
 		unimplemented!()
 	})],
+
+	/* ROW: 4 */
 
 	[&(Op::Add, "add", OpC::R, &|rt, rs, _| {
 		unimplemented!()
@@ -462,6 +495,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 		unimplemented!()
 	})],
 
+	/* ROW: 5 */
+
 	[&RESERVED,
 
 	&RESERVED,
@@ -489,6 +524,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 	&(Op::Dsubu, "dsubu", OpC::R, &|rt, rs, _| {
 		unimplemented!()
 	})],
+
+	/* ROW: 6 */
 
 	[&(Op::Tge, "tge", OpC::R, &|rt, rs, _| {
 		unimplemented!()
@@ -522,6 +559,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 		unimplemented!()
 	})],
 
+	/* ROW: 7 */
+
 	[&(Op::Dsll, "dsll", OpC::R, &|rt, rs, sa| {
 		unimplemented!()
 	}),
@@ -553,6 +592,9 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
 /* A constant 2-d array of the opcode values. , _*/
 pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
+
+    /* ROW: 0 */
+
 	[&(Op::Bltz, "bltz", OpC::B, &|rt, rs, _| {
 		unimplemented!()
 	}),
@@ -573,6 +615,8 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED],
+
+	/* ROW: 1 */
 
 	[&(Op::Tgei, "tgei", OpC::I, &|_, _, _| {
 		unimplemented!()
@@ -595,11 +639,14 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 	}),
 
 	&RESERVED,
+
 	&(Op::Tnei, "tnei", OpC::I, &|_, _, _| {
 		unimplemented!()
 	}),
 
 	&RESERVED],
+
+	/* ROW: 2 */
 
 	[&(Op::Bltzal, "bltzal", OpC::B, &|rt, rs, _| {
 		unimplemented!()
@@ -622,6 +669,8 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED],
 
+	/* ROW: 3 */
+
 	[&RESERVED,
 	&RESERVED,
 	&RESERVED,
@@ -629,6 +678,7 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED,
+
 	&(Op::Reserved, "reserved", OpC::I, &|_, _, _| {
 		unimplemented!()
 	})],
@@ -636,6 +686,9 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
 /* A constant 2-d array of the opcode values. */
 pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
+
+    /* ROW: 0 */
+
 	[&(Op::Mf, "mf", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -649,6 +702,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 	}),
 
 	&RESERVED,
+
 	&(Op::Mt, "mt", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -663,6 +717,8 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
 	&RESERVED],
 
+	/* ROW: 4 */
+
 	[&(Op::Bc, "bc", OpC::B, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -674,6 +730,8 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED],
+
+	/* ROW: 5 */
 
 	[&(Op::Co, "co", OpC::I, &|_, _, _| {
 		unimplemented!()
@@ -687,6 +745,8 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED],
 
+	/* ROW: 6 */
+
 	[&RESERVED,
 	&RESERVED,
 	&RESERVED,
@@ -699,6 +759,9 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
 /* A constant 2-d array of the opcode values. */
 pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
+
+    /* ROW: 0 */
+
 	[&(Op::Bcf, "bcf", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -720,14 +783,7 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED],
 
-	[&RESERVED,
-	&RESERVED,
-	&RESERVED,
-	&RESERVED,
-	&RESERVED,
-	&RESERVED,
-	&RESERVED,
-	&RESERVED],
+	/* ROW: 7 */
 
 	[&RESERVED,
 	&RESERVED,
@@ -737,6 +793,19 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED],
+
+	/* ROW: 8 */
+
+	[&RESERVED,
+	&RESERVED,
+	&RESERVED,
+	&RESERVED,
+	&RESERVED,
+	&RESERVED,
+	&RESERVED,
+	&RESERVED],
+
+	/* ROW: 9 */
 
 	[&RESERVED,
 	&RESERVED,
@@ -750,7 +819,11 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 
 /* A constant 2-d array of the opcode values. */
 pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
+
+    /* ROW: 0 */
+
 	[&RESERVED,
+
 	&(Op::Tlbr, "tlbr", OpC::R, &|_, _, _| {
 		unimplemented!()
 	}),
@@ -762,11 +835,14 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED,
+
 	&(Op::Tlbwr, "tlbwr", OpC::I, &|_, _, _| {
 		unimplemented!()
 	}),
 
 	&RESERVED],
+
+	/* ROW: 1 */
 
 	[&(Op::Tlbp, "tlbp", OpC::I, &|_, _, _| {
 		unimplemented!()
@@ -780,6 +856,8 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED],
 
+	/* ROW: 2 */
+
 	[&RESERVED,
 	&RESERVED,
 	&RESERVED,
@@ -788,6 +866,8 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED],
+
+	/* ROW: 3 */
 
 	[&(Op::Eret, "eret", OpC::I, &|_, _, _| {
 		unimplemented!()
