@@ -14,12 +14,12 @@ impl Inst {
 	}
 
 	/* The top-level opcode tuple. */
-	fn op_tup_top(&self) -> OpTup {
+	fn op_tup_top(&self) -> &OpTup {
 		return OP_TABLE[((self.opcode() >> 3) & 0b111) as usize][(self.opcode() & 0b111) as usize];
 	}
 
 	/* Returns the opcode's tuple. */
-	fn op_tup(&self) -> OpTup {
+	fn op_tup(&self) -> &OpTup {
 		let t = self.op_tup_top();
 		match t.0 {
 			Op::Special => {
