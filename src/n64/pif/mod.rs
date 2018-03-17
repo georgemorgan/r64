@@ -1,5 +1,5 @@
-use n64::PIF_RAM_START;
-use n64::PIF_RAM_END;
+use n64::mc::PIF_RAM_START;
+use n64::mc::PIF_RAM_END;
 
 pub struct PIF {
 	/* PIF memories. */

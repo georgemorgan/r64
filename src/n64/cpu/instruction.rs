@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use n64::cpu::CPU;
 use n64::cpu::op::*;
 use n64::cpu::GPR_NAMES;
 
@@ -84,14 +85,29 @@ impl Inst {
 		return ((self.0 >> 21) & 0b11111) as usize;
 	}
 
+	/* Returns the source register's value. */
+	pub fn rsv(&self, cpu: &CPU) -> u64 {
+		return cpu.rgpr(((self.0 >> 21) & 0b11111) as usize);
+	}
+
 	/* Returns the instruction's target register. */
 	pub fn rt(&self) -> usize {
 		return ((self.0 >> 16) & 0b11111) as usize;
 	}
 
+	/* Returns the target register's value. */
+	pub fn rtv(&self, cpu: &CPU) -> u64 {
+		return cpu.rgpr(((self.0 >> 16) & 0b11111) as usize);
+	}
+
 	/* Returns the instruciton's destination register. */
 	pub fn rd(&self) -> usize {
 		return ((self.0 >> 11) & 0b11111) as usize;
+	}
+
+	/* Writes the value to the destination register. */
+	pub fn wrd(&self, cpu: &mut CPU, value: u64) {
+		return cpu.wgpr(value, self.rd())
 	}
 
 	/* Returns the instruction's shift amount. */

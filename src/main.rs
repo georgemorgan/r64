@@ -65,13 +65,13 @@ fn main() {
 			Ok(line) => {
 				rl.add_history_entry(&line);
 				match line.as_ref() {
-					/* Prints the CPU state. */
-					"print" | "p" => {
-						println!("{:?}", n64.cpu);
-					},
+					// /* Prints the CPU state. */
+					// "print" | "p" => {
+					// 	println!("{:?}", n64.cpu);
+					// },
 					/* Steps into a single instruction. */
 					"step" | "s" | _ => {
-						n64::cpu::cycle(&mut n64);
+						n64.cycle();
 					},
 				}
 			},

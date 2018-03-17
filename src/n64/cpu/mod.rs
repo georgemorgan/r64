@@ -17,7 +17,7 @@ CPU0
 
 use std::fmt;
 
-use n64::N64;
+use n64::MC;
 
 mod op;
 use self::op::*;
@@ -96,13 +96,40 @@ impl CPU {
 	/* Handler for the immediate (I-Type) instructions. */
 	fn exec_imm(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs register. */
-		let rs = self.rgpr(i.rs());
+		let rs = i.rsv(self);
 		/* Obtain the immediate value. */
 		let imm = i.imm();
 		/* Perform the operation. */
 		let rt = i.function()(0, rs, imm);
 		/* Write the result back into the target register. */
 		self.wgpr(rt, i.rt());
+	}
+
+	/* Handler for the load/store subclass of the I-type instructions. */
+	fn exec_ldst(&mut self, i: Inst, mc: &mut MC) {
+		/* Obtain the base and offset addresses. */
+		let base = self.rgpr(i.rs()) as i32;
+		let offset = i.offset() as i16 as i32;
+		/* Are we loading or storing? */
+		match i.class() {
+			OpC::L => {
+				/* Read the memory address. */
+				let val = mc.read((base + offset) as u32) as u64;
+				/* Let the instruction's function determine the value we write. */
+				let rt = i.function()(val, 0, 0);
+				/* Write the result back into the target register. */
+				self.wgpr(rt, i.rt());
+			},
+			OpC::S => {
+				/* Obtain the value that is to be stored. */
+				let rt = i.rtv(self);
+				/* Let the function mutate this value as required1 . */
+				let val = i.function()(rt, 0, 0) as u32;
+				/* Write the result into memory. */
+				mc.write(val, (base + offset) as u32);
+			},
+			_ => ()
+		}
 	}
 
 	/* Handler for the jump (J-type) instructions. */
@@ -124,15 +151,15 @@ impl CPU {
 				self.pc = target;
 			}, Op::Jr => {
 				/* Obtain the jump target. */
-				let target = self.rgpr(i.rs());
+				let target = i.rsv(self);
 				/* Load the program counter into the return address. */
 				self.pc = target;
 			}, Op::Jalr => {
 				/* Obtain the jump target. */
-				let target = self.rgpr(i.rs());
+				let target = i.rsv(self);
 				/* Load the program counter into the destination register. */
 				let pc = self.pc;
-				self.wgpr(pc, i.rd());
+				i.wrd(self, pc);
 				/* Load the program counter into the return address. */
 				self.pc = target;
 			}, _ => ()
@@ -142,8 +169,8 @@ impl CPU {
 	/* Handler for the branch subclass of the J-type instructions. */
 	fn exec_branch(&mut self, i: Inst) -> bool {
 		/* Obtain the value stored in the rs and rt registers. */
-		let rs = self.rgpr(i.rs());
-		let rt = self.rgpr(i.rt());
+		let rs = i.rsv(self);
+		let rt = i.rtv(self);
 		/* Obtain the offset address. */
 		let offset = (i.offset() as i16 as i32) << 2;
 		/* Determine whether or not the branch should occur .*/
@@ -161,12 +188,12 @@ impl CPU {
 	/* Handler for the register (R-Type) instructions. */
 	fn exec_reg(&mut self, i: Inst) {
 		/* Obtain the value stored in the rs and rt registers. */
-		let rs = self.rgpr(i.rs());
-		let rt = self.rgpr(i.rt());
+		let rs = i.rsv(self);
+		let rt = i.rtv(self);
 		/* Obtain the value that is to be placed in rd. */
 		let rd = i.function()(rt, rs, i.sa());
 		/* Write the result back into the destination register. */
-		self.wgpr(rd, i.rd());
+		i.wrd(self, rd);
 	}
 
 	/* Handler for the coprocessor0 instructions. */
@@ -178,24 +205,24 @@ impl CPU {
 				/* Obtain the rt register from CP0. */
 				let rt = self.cp0.rreg(i.rt());
 				/* Write the value into rd. */
-				self.wgpr(rt, i.rd());
+				i.wrd(self, rt);
 			}, Op::Dmf => {
 				/* Obtain the rt register from CP0. */
 				let rt = self.cp0.rreg(i.rt());
 				/* Write the value into rd. */
-				self.wgpr(rt, i.rd());
+				i.wrd(self, rt);
 			}, Op::Cf => {
 				unimplemented!()
 			}, Op::Mt => {
 				/* TODO: Check destination register parameters. */
 
 				/* Obtain the rt register from CPU0. */
-				let rt = self.rgpr(i.rt());
+				let rt = i.rtv(self);
 				/* Write the value into rd of CP0. */
 				self.cp0.wreg(rt, i.rd());
 			}, Op::Dmt => {
 				/* Obtain the rt register from CPU0. */
-				let rt = self.rgpr(i.rt());
+				let rt = i.rtv(self);
 				/* Write the value into rd of CP0. */
 				self.cp0.wreg(rt, i.rd());
 			}, Op::Ct => {
@@ -221,73 +248,46 @@ impl CPU {
 			}, _ => ()
 		}
 	}
-}
 
-/* Handler for the load/store subclass of the I-type instructions. */
-fn exec_ldst(n64: &mut N64, i: Inst) {
-	/* Obtain the base and offset addresses. */
-	let base = n64.cpu.rgpr(i.rs()) as i32;
-	let offset = i.offset() as i16 as i32;
-	/* Are we loading or storing? */
-	match i.class() {
-		OpC::L => {
-			/* Read the memory address. */
-			let val = n64.read((base + offset) as u32) as u64;
-			/* Let the instruction's function determine the value we write. */
-			let rt = i.function()(val, 0, 0);
-			/* Write the result back into the target register. */
-			n64.cpu.wgpr(rt, i.rt());
-		},
-		OpC::S => {
-			/* Obtain the value that is to be stored. */
-			let rt = n64.cpu.rgpr(i.rt());
-			/* Let the function mutate this value as required1 . */
-			let val = i.function()(rt, 0, 0) as u32;
-			/* Write the result into memory. */
-			n64.write(val, (base + offset) as u32);
-		},
-		_ => ()
-	}
-}
-
-pub fn cycle(n64: &mut N64) {
-	/* Fetch the next instrution from memory. */
-	let i = Inst(n64.read(n64.cpu.pc as u32));
-	/* Print the opcode. */
-	println!("{:#x}: ({:#x}) {}", n64.cpu.pc, i.0, i);
-	/* Whether or not the PC should be incremented. */
-	let mut inc_pc = true;
-	/* Determine if the instrution needs to be performed on a co-processor. */
-	match i.kind() {
-		/* If the instruction is a co-processor instruction, perform it on CPz. */
-		Op::Cop0 =>
-			n64.cpu.exec_cop0(i),
-		Op::Cop1 =>
-			unimplemented!(),
-		Op::Cop2 =>
-			panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor."),
-		Op::Reserved =>
-			panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
-		_ => match i.class() {
-			OpC::I =>
-				n64.cpu.exec_imm(i),
-			OpC::L | OpC::S =>
-				exec_ldst(n64, i),
-			OpC::J => {
-				n64.cpu.exec_jump(i);
-				inc_pc = false;
-			},
-			OpC::B => {
-				inc_pc = n64.cpu.exec_branch(i);
-			},
-			OpC::R =>
-				n64.cpu.exec_reg(i)
+	pub fn cycle(&mut self, mc: &mut MC) {
+		/* Fetch the next instrution from memory. */
+		let i = Inst(mc.read(self.pc as u32));
+		/* Print the opcode. */
+		println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
+		/* Whether or not the PC should be incremented. */
+		let mut inc_pc = true;
+		/* Determine if the instrution needs to be performed on a co-processor. */
+		match i.kind() {
+			/* If the instruction is a co-processor instruction, perform it on CPz. */
+			Op::Cop0 =>
+				self.exec_cop0(i),
+			Op::Cop1 =>
+				unimplemented!(),
+			Op::Cop2 =>
+				panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor."),
+			Op::Reserved =>
+				panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode()),
+			_ => match i.class() {
+				OpC::I =>
+					self.exec_imm(i),
+				OpC::L | OpC::S =>
+					self.exec_ldst(i, mc),
+				OpC::J => {
+					self.exec_jump(i);
+					inc_pc = false;
+				},
+				OpC::B => {
+					inc_pc = self.exec_branch(i);
+				},
+				OpC::R =>
+					self.exec_reg(i)
+			}
 		}
-	}
-	/* Increment the program counter if necessary. */
-	if inc_pc {
-		/* Increment the program counter. */
-		n64.cpu.pc += 4;
+		/* Increment the program counter if necessary. */
+		if inc_pc {
+			/* Increment the program counter. */
+			self.pc += 4;
+		}
 	}
 }
 
