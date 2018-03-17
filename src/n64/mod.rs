@@ -4,8 +4,6 @@ mod vi;
 use self::vi::VI;
 mod ai;
 use self::ai::AI;
-mod si;
-use self::si::SI;
 mod mi;
 use self::mi::MI;
 mod pi;

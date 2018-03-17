@@ -1,6 +1,5 @@
 use n64::vi::VI;
 use n64::ai::AI;
-use n64::si::SI;
 use n64::mi::MI;
 use n64::ri::RI;
 use n64::pi::PI;
@@ -135,8 +134,6 @@ pub struct MC {
 	vi: VI,
 	/* Virtual AI. (Audio Interface) */
 	ai: AI,
-	/* Virtual SI. (Serial Interface) */
-	si: SI,
 	/* Virtual MI (MIPS Interface) */
 	mi: MI,
 	/* Virtual RI (RAM Interface) */
@@ -168,7 +165,6 @@ impl MC {
 			/* RCP-NUS */
 			vi: VI::new(),
 			ai: AI::new(),
-			si: SI::new(),
 			mi: MI::new(),
 			ri: RI::new(),
 			pi: PI::new(),
@@ -211,7 +207,7 @@ impl MC {
 			}, RI_REG_START ... RI_REG_END => {
 				self.ri.rreg(paddr)
 			}, SI_REG_START ... SI_REG_END => {
-				self.si.rreg(paddr)
+				self.pif.rreg(paddr)
 			}, UNUSED_START ... UNUSED_END => {
 				panic!("Attempt to read from unused address space.")
 			}, CART_DOM2_A1_START ... CART_DOM2_A1_END => {
@@ -267,7 +263,7 @@ impl MC {
 			}, RI_REG_START ... RI_REG_END => {
 				self.ri.wreg(paddr, value)
 			}, SI_REG_START ... SI_REG_END => {
-				self.si.wreg(paddr, value)
+				self.pif.wreg(paddr, value)
 			}, UNUSED_START ... UNUSED_END => {
 				panic!("Attempt to write to unused address space.")
 			}, CART_DOM2_A1_START ... CART_DOM2_A1_END |
