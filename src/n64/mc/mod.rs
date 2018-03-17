@@ -1,6 +1,8 @@
 use n64::vi::VI;
 use n64::ai::AI;
 use n64::si::SI;
+use n64::mi::MI;
+use n64::ri::RI;
 use n64::pi::PI;
 use n64::rsp::RSP;
 use n64::rdp::RDP;
@@ -135,6 +137,10 @@ pub struct MC {
 	ai: AI,
 	/* Virtual SI. (Serial Interface) */
 	si: SI,
+	/* Virtual MI (MIPS Interface) */
+	mi: MI,
+	/* Virtual RI (RAM Interface) */
+	ri: RI,
 	/* Virtual PI. (Peripheral Interface) */
 	pi: PI,
 	/* Virtual RSP. (Reality Signal Processor) */
@@ -163,6 +169,8 @@ impl MC {
 			vi: VI::new(),
 			ai: AI::new(),
 			si: SI::new(),
+			mi: MI::new(),
+			ri: RI::new(),
 			pi: PI::new(),
 			rsp: RSP::new(),
 			rdp: RDP::new(),
@@ -193,17 +201,17 @@ impl MC {
 			}, RDP_SPAN_START ... RDP_SPAN_END => {
 				unimplemented!()
 			}, MI_REG_START ... MI_REG_END => {
-				unimplemented!()
+				self.mi.rreg(paddr)
 			}, VI_REG_START ... VI_REG_END => {
-				unimplemented!()
+				self.vi.rreg(paddr)
 			}, AI_REG_START ... AI_REG_END => {
-				unimplemented!()
+				self.ai.rreg(paddr)
 			}, PI_REG_START ... PI_REG_END => {
 				self.pi.rreg(paddr)
 			}, RI_REG_START ... RI_REG_END => {
-				unimplemented!()
+				self.ri.rreg(paddr)
 			}, SI_REG_START ... SI_REG_END => {
-				unimplemented!()
+				self.si.rreg(paddr)
 			}, UNUSED_START ... UNUSED_END => {
 				panic!("Attempt to read from unused address space.")
 			}, CART_DOM2_A1_START ... CART_DOM2_A1_END => {
@@ -249,30 +257,27 @@ impl MC {
 			}, RDP_SPAN_START ... RDP_SPAN_END => {
 				unimplemented!()
 			}, MI_REG_START ... MI_REG_END => {
-				unimplemented!()
+				self.mi.wreg(paddr, value)
 			}, VI_REG_START ... VI_REG_END => {
-				unimplemented!()
+				self.vi.wreg(paddr, value)
 			}, AI_REG_START ... AI_REG_END => {
-				unimplemented!()
+				self.ai.wreg(paddr, value)
 			}, PI_REG_START ... PI_REG_END => {
 				self.pi.wreg(paddr, value)
 			}, RI_REG_START ... RI_REG_END => {
-				unimplemented!()
+				self.ri.wreg(paddr, value)
 			}, SI_REG_START ... SI_REG_END => {
-				unimplemented!()
+				self.si.wreg(paddr, value)
 			}, UNUSED_START ... UNUSED_END => {
 				panic!("Attempt to write to unused address space.")
 			}, CART_DOM2_A1_START ... CART_DOM2_A1_END |
-			CART_DOM1_A1_START ... CART_DOM1_A1_END => {
-				unimplemented!()
-			}, CART_DOM2_A2_START ... CART_DOM2_A2_END => {
-				unimplemented!()
-			}, CART_DOM1_A2_START ... CART_DOM1_A2_END => {
-				unimplemented!()
-			}, CART_DOM1_A3_START ... CART_DOM1_A3_END => {
-				unimplemented!()
+			   CART_DOM1_A1_START ... CART_DOM1_A1_END |
+			   CART_DOM2_A2_START ... CART_DOM2_A2_END |
+			   CART_DOM1_A2_START ... CART_DOM1_A2_END |
+			   CART_DOM1_A3_START ... CART_DOM1_A3_END => {
+				panic!("Attempt to write to read-only cartridge memory {:#x}.", paddr)
 			}, PIF_ROM_START ... PIF_ROM_END => {
-				panic!("Attempt to write to a read-only location {:#x}.", paddr)
+				panic!("Attempt to write to a read-only PIF memory {:#x}.", paddr)
 			}, PIF_RAM_START ... PIF_RAM_END => {
 				wmem(value, paddr - PIF_RAM_START, &mut self.pif.pram)
 			}, RESERVED_START ... RESERVED_END => {

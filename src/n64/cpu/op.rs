@@ -547,17 +547,13 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 		unimplemented!()
 	}),
 
-	&(Op::Reserved, "reserved", OpC::R, &|rt, rs, _| {
-		unimplemented!()
-	}),
+	&RESERVED,
 
 	&(Op::Tne, "tne", OpC::R, &|rt, rs, _| {
 		unimplemented!()
 	}),
 
-	&(Op::Reserved, "reserved", OpC::R, &|rt, rs, _| {
-		unimplemented!()
-	})],
+	&RESERVED],
 
 	/* ROW: 7 */
 
@@ -678,10 +674,7 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 	&RESERVED,
 	&RESERVED,
 	&RESERVED,
-
-	&(Op::Reserved, "reserved", OpC::I, &|_, _, _| {
-		unimplemented!()
-	})],
+    &RESERVED],
 ];
 
 /* A constant 2-d array of the opcode values. */

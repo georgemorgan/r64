@@ -84,31 +84,31 @@ impl PI {
 	pub fn wreg(&mut self, reg: u32, value: u32) {
 		match reg {
 			PI_REG_DRAM_ADDR => {
-				self.dram_addr = value;
+				self.dram_addr = value
 			}, PI_REG_CART_ADDR => {
-				self.cart_addr = value;
+				self.cart_addr = value
 			}, PI_REG_RD_LEN => {
-				self.rd_len = value;
+				self.rd_len = value
 			}, PI_REG_WR_LEN => {
-				self.wr_len = value;
+				self.wr_len = value
 			}, PI_REG_STATUS => {
-				self.status = value;
+				self.status = value
 			}, PI_REG_BSD_DOM1_LAT => {
-				self.bsd_dom1_lat = value;
+				self.bsd_dom1_lat = value
 			}, PI_REG_BSD_DOM1_PWD => {
-				self.bsd_dom1_pwd = value;
+				self.bsd_dom1_pwd = value
 			}, PI_REG_BSD_DOM1_PGS => {
-				self.bsd_dom1_pgs = value;
+				self.bsd_dom1_pgs = value
 			}, PI_REG_BSD_DOM1_RLS => {
-				self.bsd_dom1_rls = value;
+				self.bsd_dom1_rls = value
 			}, PI_REG_BSD_DOM2_LAT => {
-				self.bsd_dom2_lat = value;
+				self.bsd_dom2_lat = value
 			}, PI_REG_BSD_DOM2_PWD => {
-				self.bsd_dom2_pwd = value;
+				self.bsd_dom2_pwd = value
 			}, PI_REG_BSD_DOM2_PGS => {
-				self.bsd_dom2_pgs = value;
+				self.bsd_dom2_pgs = value
 			}, PI_REG_BSD_DOM2_RLS => {
-				self.bsd_dom2_rls = value;
+				self.bsd_dom2_rls = value
 			}, _ => panic!("Write to unrecognized PI register address: {:#x}", reg)
 		}
 	}
