@@ -197,9 +197,9 @@ impl MC {
 			}, SP_REG_START ... SP_REG_END => {
 				self.rsp.rreg(paddr)
 			}, RDP_CMD_START ... RDP_CMD_END => {
-				unimplemented!()
+				self.rdp.dpc_rreg(paddr)
 			}, RDP_SPAN_START ... RDP_SPAN_END => {
-				unimplemented!()
+				self.rdp.dps_rreg(paddr)
 			}, MI_REG_START ... MI_REG_END => {
 				self.mi.rreg(paddr)
 			}, VI_REG_START ... VI_REG_END => {
@@ -253,9 +253,9 @@ impl MC {
 			}, SP_REG_START ... SP_REG_END => {
 				self.rsp.wreg(paddr, value)
 			}, RDP_CMD_START ... RDP_CMD_END => {
-				unimplemented!()
+				self.rdp.dpc_wreg(paddr, value)
 			}, RDP_SPAN_START ... RDP_SPAN_END => {
-				unimplemented!()
+				self.rdp.dps_wreg(paddr, value)
 			}, MI_REG_START ... MI_REG_END => {
 				self.mi.wreg(paddr, value)
 			}, VI_REG_START ... VI_REG_END => {
