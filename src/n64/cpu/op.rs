@@ -22,24 +22,24 @@ pub enum OpC {
 pub enum Op {
 
     /* Unique opcodes */
-    Special,    RegImm,        J,            Jal,        Beq,        Bne,        Blez,        Bgtz,
-    Addi,        Addiu,        Slti,        Sltiu,        Andi,        Ori,        Xori,        Lui,
-    Cop0,        Cop1,        Cop2,        /**/        Beql,        Bnel,        Blezl,        Bgtzl,
-    Daddi,        Daddiu,        Ldl,        Ldr,        /**/        /**/        /**/        /**/
-    Lb,            Lh,            Lwl,        Lw,            Lbu,        Lhu,        Lwr,        Lwu,
-    Sb,            Sh,            Swl,        Sw,            Sdl,        Sdr,        Swr,        Cache,
-    Ll,            Lwc1,        Lwc2,        /**/        Lld,        Ldc1,        Ldc2,        Ld,
-    Sc,            Swc1,        Swc2,        /**/        Scd,        Sdc1,        Sdc2,        Sd,
+    Special,    RegImm,     J,          Jal,        Beq,        Bne,        Blez,       Bgtz,
+    Addi,       Addiu,      Slti,       Sltiu,      Andi,       Ori,        Xori,       Lui,
+    Cop0,       Cop1,       Cop2,       /**/        Beql,       Bnel,       Blezl,      Bgtzl,
+    Daddi,      Daddiu,     Ldl,        Ldr,        /**/        /**/        /**/        /**/
+    Lb,         Lh,         Lwl,        Lw,         Lbu,        Lhu,        Lwr,        Lwu,
+    Sb,         Sh,         Swl,        Sw,         Sdl,        Sdr,        Swr,        Cache,
+    Ll,         Lwc1,       Lwc2,       /**/        Lld,        Ldc1,       Ldc2,       Ld,
+    Sc,         Swc1,       Swc2,       /**/        Scd,        Sdc1,       Sdc2,       Sd,
 
     /* Special opcodes */
-    Sll,        /**/        Srl,        Sra,        Sllv,        /**/        Srlv,        Srav,
-    Jr,            Jalr,        /**/        /**/        Syscall,    Brk,        /**/        Sync,
-    Mfhi,        Mthi,        Mflo,        Mtlo,        Dsllv,        /**/        Dsrlv,        Dsrav,
-    Mult,        Multu,        Div,        Divu,        Dmult,        Dmultu,        Ddiv,        Ddivu,
-    Add,        Addu,        Sub,        Subu,        And,        Or,            Xor,        Nor,
-    /**/        /**/        Slt,        Sltu,        Dadd,        Daddu,        Dsub,        Dsubu,
-    Tge,        Tgeu,        Tlt,        Tltu,        Teq,        /**/        Tne,        /**/
-    Dsll,        /**/        Dsrl,        Dsra,        Dsll32,        /**/        Dsrl32,        Dsra32,
+    Sll,        /**/        Srl,        Sra,        Sllv,       /**/        Srlv,       Srav,
+    Jr,         Jalr,       /**/        /**/        Syscall,    Brk,        /**/        Sync,
+    Mfhi,       Mthi,       Mflo,       Mtlo,       Dsllv,      /**/        Dsrlv,      Dsrav,
+    Mult,       Multu,      Div,        Divu,       Dmult,      Dmultu,     Ddiv,       Ddivu,
+    Add,        Addu,       Sub,        Subu,       And,        Or,         Xor,        Nor,
+    /**/        /**/        Slt,        Sltu,       Dadd,       Daddu,      Dsub,       Dsubu,
+    Tge,        Tgeu,       Tlt,        Tltu,       Teq,        /**/        Tne,        /**/
+    Dsll,       /**/        Dsrl,       Dsra,       Dsll32,     /**/        Dsrl32,     Dsra32,
 
     /* RegImm opcodes. */
     Bltz,        Bgez,        Bltzl,        Bgezl,        /**/        /**/        /**/        /**/
