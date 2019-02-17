@@ -42,12 +42,12 @@ pub const N64_ROM_HEADER_SIZE: usize = 0x40;
 pub struct N64 {
 
     /* Virtual MC (Memeory Controller) */
-    mc: MC,
+    pub mc: MC,
 
     /* CPU-NUS */
 
     /* Virtual VR4300 MIPS 64-bit CPU. */
-    cpu: CPU
+    pub cpu: CPU
 }
 
 impl N64 {

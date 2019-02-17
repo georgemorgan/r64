@@ -33,18 +33,18 @@ const GPR_SIZE: usize = 32;
 
 pub struct CPU {
     /* The CPU's coprocessor. */
-    cp0: CP0,
+    pub cp0: CP0,
     /* The CPU's general purpose register file. */
-    gpr: [u64; GPR_SIZE],
+    pub gpr: [u64; GPR_SIZE],
     /* The CPU's floating point register file. */
-    fpr: [f64; GPR_SIZE],
+    pub fpr: [f64; GPR_SIZE],
     /* The hi and lo register pair. */
-    hi: u64,
-    lo: u64,
+    pub hi: u64,
+    pub lo: u64,
     /* The load/link bit. */
-    ll: u8,
+    pub ll: u8,
     /* The program counter. */
-    pc: u64
+    pub pc: u64
 }
 
 impl CPU {
@@ -308,20 +308,20 @@ impl fmt::Debug for CPU {
             try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
         }
 
-        // for r in 0..GPR_SIZE {
-        //     if (r % REGS_PER_LINE) == 0 {
-        //         try!(writeln!(f, ""))
-        //     }
-        //     try!(write!(f, "{:02} ({}): {:#018X} ", r, r, self.cp0.rreg(r)))
-        // }
+        for r in 0..GPR_SIZE {
+            if (r % REGS_PER_LINE) == 0 {
+                try!(writeln!(f, ""))
+            }
+            try!(write!(f, "{:02} ({:02}): {:#018X} ", r, r, self.cp0.rreg(r)))
+        }
 
-        // try!(write!(f, "\n\nCPU Floating Point Registers:"));
-        // for r in 0..GPR_SIZE {
-        //     if (r % REGS_PER_LINE) == 0 {
-        //         try!(writeln!(f, ""))
-        //     }
-        //     try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
-        // }
+        try!(write!(f, "\n\nCPU Floating Point Registers:"));
+        for r in 0..GPR_SIZE {
+            if (r % REGS_PER_LINE) == 0 {
+                try!(writeln!(f, ""))
+            }
+            try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
+        }
 
         Ok(())
 

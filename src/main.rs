@@ -66,9 +66,9 @@ fn main() {
                 rl.add_history_entry(&line);
                 match line.as_ref() {
                     // /* Prints the CPU state. */
-                    // "print" | "p" => {
-                    //     println!("{:?}", n64.cpu);
-                    // },
+                    "print" | "p" => {
+                        println!("{:?}", n64.cpu);
+                    },
                     /* Steps into a single instruction. */
                     "step" | "s" | _ => {
                         n64.cycle();
