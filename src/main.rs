@@ -59,7 +59,7 @@ fn main() {
     let mut n64 = N64::new(crom, prom);
 
     let mut rl = Editor::<()>::new();
-    loop {
+    'main_loop: loop {
         let readline = rl.readline("> ");
         match readline {
             Ok(line) => {
@@ -68,6 +68,9 @@ fn main() {
                     // /* Prints the CPU state. */
                     "print" | "p" => {
                         println!("{:?}", n64.cpu);
+                    },
+                    "quit" | "q" => {
+                        break 'main_loop;
                     },
                     /* Steps into a single instruction. */
                     "step" | "s" | _ => {
