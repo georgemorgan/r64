@@ -140,7 +140,7 @@ impl fmt::Display for Inst {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.class() {
             OpC::I => {
-                write!(f, "{} {}, {}, {:#x}", self.op_str(), GPR_NAMES[self.rt()], GPR_NAMES[self.rs()], self.imm())
+                write!(f, "{} {}, {:#x}", self.op_str(), GPR_NAMES[self.rt()], self.imm())
             }, OpC::L | OpC::S => {
                 write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()])
             }, OpC::J => {
