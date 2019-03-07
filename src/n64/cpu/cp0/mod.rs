@@ -20,23 +20,27 @@ use n64::cpu::GPR_SIZE;
 const CP0_CONFIG: usize = 0x10;
 
 pub struct CP0 {
-    /* The CPU's general purpose register file. */
+    /* the cop0 general purpose registers */
     regs: [u64; GPR_SIZE],
 }
 
 impl CP0 {
+    
     pub fn new() -> CP0 {
         CP0 {
-            /* Zero-initialize the registers. */
+            /* zero-initialize the cop0 registers */
             regs: [0; GPR_SIZE]
         }
     }
-    /* Reads from the specified register. */
-    pub fn rreg(&self, reg: usize) -> u64 {
+
+    /* reads from a cop0 register */
+    pub fn rd(&self, reg: usize) -> u64 {
         self.regs[reg]
     }
-    /* Writes to the specified register. */
-    pub fn wreg(&mut self, val: u64, reg: usize) {
+
+    /* writes to a cop0 register */
+    pub fn wr(&mut self, val: u64, reg: usize) {
         self.regs[reg] = val;
     }
+
 }

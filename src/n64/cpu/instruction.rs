@@ -5,6 +5,7 @@ use std::fmt;
 use n64::cpu::CPU;
 use n64::cpu::op::*;
 use n64::cpu::GPR_NAMES;
+use n64::cpu::CP0_NAMES;
 
 pub struct Inst(pub u32);
 
@@ -21,7 +22,9 @@ impl Inst {
 
     /* Returns the opcode's tuple. */
     fn op_tup(&self) -> &OpTup {
+        
         let t = self.op_tup_top();
+
         match t.0 {
             Op::Special => {
                 return SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize];
@@ -146,9 +149,13 @@ impl fmt::Display for Inst {
             }, OpC::J => {
                 write!(f, "{} {:#x}\n", self.op_str(), self.target())
             }, OpC::B => {
-                write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rt()], GPR_NAMES[self.rs()], self.offset() as i16 as i64)
+                write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], self.offset() as i16 as i64)
             }, OpC::R => {
-                write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rt()], GPR_NAMES[self.rs()])
+                write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
+            }, OpC::C => {
+                write!(f, "coprocessor inst... ")
+            } _ => {
+                panic!("Unimplemented instruction class {:#x}", self.class() as u32);
             }
         }
     }

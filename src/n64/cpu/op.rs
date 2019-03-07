@@ -1,20 +1,21 @@
 /* op.rs - Exposes all of the possible VR4300i opcodes and their implementations. */
 
 #[derive(Copy, Clone)]
-/* Possible opcode classes. */
 pub enum OpC {
-    /* Immediate instruction. (I-type) */
+    /* immediate instruction (i-type) */
     I,
-    /* Load instruction. (subset of I-type) */
+    /* load instruction (subset of i-type) */
     L,
-    /* Store instruction. (subset of I-type) */
+    /* store instruction (subset of i-type) */
     S,
-    /* Jump instruction. (J-type) */
+    /* jump instruction (j-type) */
     J,
-    /* Branch instruction. (subset of J-type) */
+    /* branch instruction (subset of j-type) */
     B,
-    /* Register instruction. */
+    /* register instruction */
     R,
+    /* coprocessor instruction */
+    C
 }
 
 /* Valid VR4300 opcodes. Figure 16-1 in NEC VR4300. */
@@ -22,6 +23,7 @@ pub enum OpC {
 pub enum Op {
 
     /* Unique opcodes */
+    
     Special,    RegImm,     J,          Jal,        Beq,        Bne,        Blez,       Bgtz,
     Addi,       Addiu,      Slti,       Sltiu,      Andi,       Ori,        Xori,       Lui,
     Cop0,       Cop1,       Cop2,       /**/        Beql,       Bnel,       Blezl,      Bgtzl,
@@ -32,6 +34,7 @@ pub enum Op {
     Sc,         Swc1,       Swc2,       /**/        Scd,        Sdc1,       Sdc2,       Sd,
 
     /* Special opcodes */
+    
     Sll,        /**/        Srl,        Sra,        Sllv,       /**/        Srlv,       Srav,
     Jr,         Jalr,       /**/        /**/        Syscall,    Brk,        /**/        Sync,
     Mfhi,       Mthi,       Mflo,       Mtlo,       Dsllv,      /**/        Dsrlv,      Dsrav,
@@ -42,24 +45,28 @@ pub enum Op {
     Dsll,       /**/        Dsrl,       Dsra,       Dsll32,     /**/        Dsrl32,     Dsra32,
 
     /* RegImm opcodes. */
-    Bltz,        Bgez,        Bltzl,        Bgezl,        /**/        /**/        /**/        /**/
-    Tgei,        Tgeiu,        Tlti,        Tltiu,        Teqi,        /**/        Tnei,        /**/
-    Bltzal,        Bgezal,        Bltzall,    Bgezall,    /**/        /**/        /**/        /**/
+    
+    Bltz,       Bgez,       Bltzl,      Bgezl,      /**/        /**/        /**/        /**/
+    Tgei,       Tgeiu,      Tlti,       Tltiu,      Teqi,       /**/        Tnei,       /**/
+    Bltzal,     Bgezal,     Bltzall,    Bgezall,    /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
     /* COPz rs opcodes. */
+    
     Mf,            Dmf,        Cf,            /**/        Mt,            Dmt,        Ct,            /**/
     Bc,            /**/        /**/        /**/        /**/        /**/        /**/        /**/
     Co,            /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
     /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
 
     /* COPz rt opcodes. */
+    
     Bcf,        Bct,        Bcfl,        Bctl,        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
     /* CP0 opcodes */
+    
     /**/        Tlbr,        Tlbwi,        /**/        /**/        /**/        Tlbwr,        /**/
     Tlbp,        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
@@ -79,6 +86,7 @@ const RESERVED: OpTup = (Op::Reserved, "reserved", OpC::R, &|_, _, _| {
 });
 
 /* A constant 2-d array of the opcode values. */
+
 pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
@@ -117,36 +125,47 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 1 */
 
+    // Sign-extends the 16-bit immediate and adds it to register rs. Stores the 32-bit result to register rt (sign-extends the result in the 64-bit mode).
+    // Generates an exception if a 2's complement integer overflow occurs.
     [&(Op::Addi, "addi", OpC::I, &|_, rs, imm| {
-        rs + (imm as i16) as u64
+        (rs as i64 + imm as i16 as i64) as u64
     }),
 
+    // Sign-extends the 16-bit immediate and adds it to register rs. Stores the 32-bit result to register rt (sign-extends the result in the 64-bit mode).
+    // Does not generate an exception even if an integer overflow occurs.
     &(Op::Addiu, "addiu", OpC::I, &|_, rs, imm| {
-        rs + (imm as i16) as u64
+        (rs as i64 + imm as i16 as i64) as u64
     }),
 
+    // Sign-extends the 16-bit immediate and compares it with register rs as a signed integer. If rs is less than the immediate, stores 1 to register rt; otherwise, stores 0 to register rt.
     &(Op::Slti, "slti", OpC::I, &|_, rs, imm| {
-        if (rs as i64) < (imm as i16) as i64 { 1 } else { 0 }
+        if (rs as i64) < imm as i16 as i64 { 1 } else { 0 }
     }),
 
+    // Sign-extends the 16-bit immediate and compares it with register rs as an unsigned integer. If rs is less than the immediate, stores 1 to register rt; otherwise, stores 0 to register rt.
     &(Op::Sltiu, "sltiu", OpC::I, &|_, rs, imm| {
-        if rs < (imm as i16) as u64 { 1 } else { 0 }
+        if (rs as u64) < imm as i16 as i64 as u64 { 1 } else { 0 }
     }),
 
+    // Zero-extends the 16-bit immediate, ANDs it with register rs, and stores the result to register rt.
     &(Op::Andi, "andi", OpC::I, &|_, rs, imm| {
-        rs & imm as u64
+        (rs as u64) & (imm as u64)
     }),
 
+    // Zero-extends the 16-bit immediate, ORs it with register rs, and stores the result to register rt.
     &(Op::Ori, "ori", OpC::I, &|_, rs, imm| {
-        rs | imm as u64
+        (rs as u64) | (imm as u64)
     }),
 
+    // Zero-extends the 16-bit immediate, exclusive-ORs it with register rs, and stores the result to register rt.
     &(Op::Xori, "xori", OpC::I, &|_, rs, imm| {
-        rs ^ imm as u64
+        (rs as u64) ^ (imm as u64)
     }),
 
+    // Shifts the 16-bit immediate 16 bits to the left, and clears the low-order 16 bits of the word to 0.
+    // Stores the result to register rt (by sign-extending the result in the 64-bit mode).
     &(Op::Lui, "lui", OpC::I, &|_, _, imm| {
-        (imm as i16 as i64 as u64) << 16
+        (((imm as u32) << 16) & !0xFFFF) as i32 as i64 as u64
     })],
 
     /* ROW: 2 */
@@ -165,14 +184,17 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     &RESERVED,
 
+    // Branches to the branch address if registers rs and rt are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Beql, "beql", OpC::B, &|rt, rs, _| {
         if rt == rs { 1 } else { 0 }
     }),
-
+    
+    // Branches to the branch address if registers rs and rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bnel, "bnel", OpC::B, &|rt, rs, _| {
         if rt != rs { 1 } else { 0 }
     }),
 
+    // Branches to the branch address if register rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Blezl, "blezl", OpC::B, &|rt, rs, _| {
         if (rs as i64) < 0 { 1 } else { 0 }
     }),
@@ -599,12 +621,14 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
         unimplemented!()
     }),
 
+    // Branches to the branch address if register rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bltzl, "bltzl", OpC::B, &|rt, rs, _| {
-        unimplemented!()
+        if (rs as i64) < 0 { 1 } else { 0 } 
     }),
 
+    // Branches to the branch address if register rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bgezl, "bgezl", OpC::B, &|rt, rs, _| {
-        unimplemented!()
+        if (rs as i64) > 0 { 1 } else { 0 }
     }),
 
     &RESERVED,
