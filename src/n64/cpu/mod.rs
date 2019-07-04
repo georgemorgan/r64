@@ -33,29 +33,34 @@ const GPR_SIZE: usize = 32;
 
 pub struct CPU {
     pub cp0: CP0,
-    
+
     pub gpr: [u64; GPR_SIZE],
     pub fpr: [f64; GPR_SIZE],
-    
+
     pub hi: u64,
     pub lo: u64,
     pub ll: u8,
-    pub pc: u64
+    pub pc: u64,
+
+    /* last executed instruction for debugging */
+    pub last: u32
 }
 
 impl CPU {
-    
+
     pub fn new(pc: u64) -> CPU {
         CPU {
             cp0: CP0::new(),
-            
+
             gpr: [0; GPR_SIZE],
             fpr: [0.0; GPR_SIZE],
-            
+
             hi: 0,
             lo: 0,
             ll: 0,
-            pc: pc
+            pc: pc,
+
+            last: 0
         }
     }
 
@@ -93,7 +98,7 @@ impl CPU {
     fn exec_ldst(&mut self, i: Inst, mc: &mut MC) {
         let base = self.rgpr(i.rs()) as i32;
         let offset = i.offset() as i16 as i32;
-        
+
         match i.class() {
             OpC::L => {
                 let val = mc.read((base + offset) as u32) as u64;
@@ -135,7 +140,7 @@ impl CPU {
         let rs = i.rsv(self);
         let rt = i.rtv(self);
         let offset = (i.offset() as i16 as i32) << 2;
-        
+
         let should_branch = i.function()(rt, rs, 0);
         if should_branch > 0 {
             self.pc = (self.pc as i32 + offset) as u64;
@@ -151,9 +156,9 @@ impl CPU {
     }
 
     /* perform coprocessor0 instructions */
-    
+
     fn exec_cop0(&mut self, i: Inst) {
-        
+
         match i.op() {
             Op::Mf => {
                 let rt = self.cp0.rd(i.rt());
@@ -190,18 +195,23 @@ impl CPU {
             }, Op::Eret => {
                 unimplemented!();
             }, _ => {
-            
+
             }
         };
-    
+
     }
 
     pub fn cycle(&mut self, mc: &mut MC) {
 
-        let i = Inst(mc.read(self.pc as u32));
-        
+        let op = mc.read(self.pc as u32);
+
+        let i = Inst(op);
+
+        /* quick way to store the last instruction */
+        self.last = op;
+
         println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
-        
+
         match i.kind() {
             Op::Cop0 => {
                 self.exec_cop0(i);
@@ -235,6 +245,16 @@ impl CPU {
     }
 }
 
+pub fn print_last(cpu: &CPU) {
+
+    let i = Inst(cpu.last);
+
+    println!("{}", i);
+    println!("{:02} ({}): {:#018X} ", i.rd(), GPR_NAMES[i.rd()], cpu.rgpr(i.rd()));
+    println!("{:02} ({}): {:#018X} ", i.rt(), GPR_NAMES[i.rt()], cpu.rgpr(i.rt()));
+    println!("{:02} ({}): {:#018X} ", i.rs(), GPR_NAMES[i.rs()], cpu.rgpr(i.rs()));
+}
+
 const GPR_NAMES: [&'static str; GPR_SIZE] = [
     "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3",
     "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
@@ -242,48 +262,39 @@ const GPR_NAMES: [&'static str; GPR_SIZE] = [
     "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra",
 ];
 
-const CP0_NAMES: [&'static str; GPR_SIZE] = [
-    "Index",       "BadVAddr",    "Config",      "RESERVED",
-    "Random",      "Count",       "LLAddr",      "RESERVED",
-    "EntryLo0",    "EntryHi",     "WatchLo",     "PErr",
-    "EntryLo1",    "Compare",     "WatchHi",     "CacheErr",
-    "Context",     "Status",      "XContext",    "TagLo",
-    "PageMask",    "Cause",       "RESERVED",    "TagHi",
-    "Wired",       "EPC",         "RESERVED",    "ErrorEPC",
-    "RESERVED",    "PRevID",      "RESERVED",    "RESERVED"
-];
+use self::cp0::CP0_NAMES;
 
 impl fmt::Debug for CPU {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        
+
         const REGS_PER_LINE: usize = 2;
-        
+
         for r in 0..GPR_SIZE {
             if (r % REGS_PER_LINE) == 0 {
                 try!(writeln!(f, ""))
             }
-            
+
             try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
         }
-        
+
         try!(writeln!(f, ""));
-        
+
         for r in 0..GPR_SIZE {
             if (r % REGS_PER_LINE) == 0 {
                 try!(writeln!(f, ""))
             }
-            
-            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, CP0_NAMES[r], self.cp0.rd(r)))
+
+            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rd(r)))
         }
 
         try!(write!(f, "\n\nCPU Floating Point Registers:"));
-        
+
         for r in 0..GPR_SIZE {
             if (r % REGS_PER_LINE) == 0 {
                 try!(writeln!(f, ""))
             }
-            
+
             try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
         }
 

@@ -15,17 +15,28 @@ COP0
 
 */
 
+pub const CP0_NAMES: [&'static str; GPR_SIZE] = [
+    "Index",       "BadVAddr",    "Config",      "RESERVED",
+    "Random",      "Count",       "LLAddr",      "RESERVED",
+    "EntryLo0",    "EntryHi",     "WatchLo",     "PErr",
+    "EntryLo1",    "Compare",     "WatchHi",     "CacheErr",
+    "Context",     "Status",      "XContext",    "TagLo",
+    "PageMask",    "Cause",       "RESERVED",    "TagHi",
+    "Wired",       "EPC",         "RESERVED",    "ErrorEPC",
+    "RESERVED",    "PRevID",      "RESERVED",    "RESERVED"
+];
+
 use n64::cpu::GPR_SIZE;
 
 const CP0_CONFIG: usize = 0x10;
 
 pub struct CP0 {
-    /* the cop0 general purpose registers */
-    regs: [u64; GPR_SIZE],
+    /* the 32-bit cop0 general purpose registers */
+    regs: [u32; GPR_SIZE],
 }
 
 impl CP0 {
-    
+
     pub fn new() -> CP0 {
         CP0 {
             /* zero-initialize the cop0 registers */
@@ -35,12 +46,12 @@ impl CP0 {
 
     /* reads from a cop0 register */
     pub fn rd(&self, reg: usize) -> u64 {
-        self.regs[reg]
+        self.regs[reg] as u64
     }
 
     /* writes to a cop0 register */
     pub fn wr(&mut self, val: u64, reg: usize) {
-        self.regs[reg] = val;
+        self.regs[reg] = val as u32;
     }
 
 }

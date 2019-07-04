@@ -69,6 +69,10 @@ fn main() {
                     "print" | "p" => {
                         println!("{:?}", n64.cpu);
                     },
+                    // /* Prints the side effects of the last instruction. */
+                    "last" | "l" => {
+                        println!("{:?}", n64::cpu::print_last(&n64.cpu));
+                    },
                     "quit" | "q" => {
                         break 'main_loop;
                     },

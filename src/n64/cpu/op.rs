@@ -23,7 +23,7 @@ pub enum OpC {
 pub enum Op {
 
     /* Unique opcodes */
-    
+
     Special,    RegImm,     J,          Jal,        Beq,        Bne,        Blez,       Bgtz,
     Addi,       Addiu,      Slti,       Sltiu,      Andi,       Ori,        Xori,       Lui,
     Cop0,       Cop1,       Cop2,       /**/        Beql,       Bnel,       Blezl,      Bgtzl,
@@ -34,7 +34,7 @@ pub enum Op {
     Sc,         Swc1,       Swc2,       /**/        Scd,        Sdc1,       Sdc2,       Sd,
 
     /* Special opcodes */
-    
+
     Sll,        /**/        Srl,        Sra,        Sllv,       /**/        Srlv,       Srav,
     Jr,         Jalr,       /**/        /**/        Syscall,    Brk,        /**/        Sync,
     Mfhi,       Mthi,       Mflo,       Mtlo,       Dsllv,      /**/        Dsrlv,      Dsrav,
@@ -45,28 +45,28 @@ pub enum Op {
     Dsll,       /**/        Dsrl,       Dsra,       Dsll32,     /**/        Dsrl32,     Dsra32,
 
     /* RegImm opcodes. */
-    
+
     Bltz,       Bgez,       Bltzl,      Bgezl,      /**/        /**/        /**/        /**/
     Tgei,       Tgeiu,      Tlti,       Tltiu,      Teqi,       /**/        Tnei,       /**/
     Bltzal,     Bgezal,     Bltzall,    Bgezall,    /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
     /* COPz rs opcodes. */
-    
+
     Mf,            Dmf,        Cf,            /**/        Mt,            Dmt,        Ct,            /**/
     Bc,            /**/        /**/        /**/        /**/        /**/        /**/        /**/
     Co,            /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
     /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
 
     /* COPz rt opcodes. */
-    
+
     Bcf,        Bct,        Bcfl,        Bctl,        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
     /* CP0 opcodes */
-    
+
     /**/        Tlbr,        Tlbwi,        /**/        /**/        /**/        Tlbwr,        /**/
     Tlbp,        /**/        /**/        /**/        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
@@ -171,6 +171,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     /* ROW: 2 */
 
     [&(Op::Cop0, "cop0", OpC::I, &|_, _, _| {
+        print!("COP!");
         unimplemented!()
     }),
 
@@ -188,7 +189,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     &(Op::Beql, "beql", OpC::B, &|rt, rs, _| {
         if rt == rs { 1 } else { 0 }
     }),
-    
+
     // Branches to the branch address if registers rs and rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bnel, "bnel", OpC::B, &|rt, rs, _| {
         if rt != rs { 1 } else { 0 }
@@ -623,7 +624,7 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     // Branches to the branch address if register rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bltzl, "bltzl", OpC::B, &|rt, rs, _| {
-        if (rs as i64) < 0 { 1 } else { 0 } 
+        if (rs as i64) < 0 { 1 } else { 0 }
     }),
 
     // Branches to the branch address if register rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.

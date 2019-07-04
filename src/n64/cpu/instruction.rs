@@ -22,7 +22,7 @@ impl Inst {
 
     /* Returns the opcode's tuple. */
     fn op_tup(&self) -> &OpTup {
-        
+
         let t = self.op_tup_top();
 
         match t.0 {
@@ -141,21 +141,27 @@ impl Inst {
 
 impl fmt::Display for Inst {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.class() {
-            OpC::I => {
-                write!(f, "{} {}, {:#x}", self.op_str(), GPR_NAMES[self.rt()], self.imm())
-            }, OpC::L | OpC::S => {
-                write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()])
-            }, OpC::J => {
-                write!(f, "{} {:#x}\n", self.op_str(), self.target())
-            }, OpC::B => {
-                write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], self.offset() as i16 as i64)
-            }, OpC::R => {
-                write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
-            }, OpC::C => {
-                write!(f, "coprocessor inst... ")
-            } _ => {
-                panic!("Unimplemented instruction class {:#x}", self.class() as u32);
+        match self.kind() {
+            Op::Cop0 | Op::Cop1 | Op::Cop2 => {
+                write!(f, "{} {}, {}", self.op_str(), GPR_NAMES[self.rt()],  CP0_NAMES[self.rd()])
+            }, _ => {
+                match self.class() {
+                    OpC::I => {
+                        write!(f, "{} {}, {}, {:#x}", self.op_str(), GPR_NAMES[self.rt()], GPR_NAMES[self.rs()], self.imm())
+                    }, OpC::L | OpC::S => {
+                        write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()])
+                    }, OpC::J => {
+                        write!(f, "{} {:#x}\n", self.op_str(), self.target())
+                    }, OpC::B => {
+                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], self.offset() as i16 as i64)
+                    }, OpC::R => {
+                        write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
+                    }, OpC::C => {
+                        write!(f, "coprocessor inst... ")
+                    } _ => {
+                        panic!("Unimplemented instruction class {:#x}", self.class() as u32)
+                    }
+                }
             }
         }
     }
