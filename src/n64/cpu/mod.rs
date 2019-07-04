@@ -118,20 +118,24 @@ impl CPU {
         match i.op() {
             Op::J => {
                 let target = i.target();
-                self.pc = target;
+                /* sub 4 here because we will inc the pc by 4 later */
+                self.pc = target - 4;
             }, Op::Jal => {
                 let target = i.target();
                 let pc = self.pc;
                 self.wgpr(pc, 31);
-                self.pc = target;
+                /* sub 4 here because we will inc the pc by 4 later */
+                self.pc = target - 4;
             }, Op::Jr => {
                 let target = i.rsv(self);
-                self.pc = target;
+                /* sub 4 here because we will inc the pc by 4 later */
+                self.pc = target - 4;
             }, Op::Jalr => {
                 let target = i.rsv(self);
                 let pc = self.pc;
                 i.wrd(self, pc);
-                self.pc = target;
+                /* sub 4 here because we will inc the pc by 4 later */
+                self.pc = target - 4;
             }, _ => ()
         }
     }
@@ -139,11 +143,12 @@ impl CPU {
     fn exec_branch(&mut self, i: Inst) {
         let rs = i.rsv(self);
         let rt = i.rtv(self);
-        let offset = (i.offset() as i16 as i32) << 2;
+        let offset = ((i.offset() as i16 as i32) << 2) as i64;
 
         let should_branch = i.function()(rt, rs, 0);
         if should_branch > 0 {
-            self.pc = (self.pc as i32 + offset) as u64;
+            /* sub 4 here because we will inc the pc by 4 later */
+            self.pc = (self.pc as i64 + offset) as u64 - 4;
         }
     }
 

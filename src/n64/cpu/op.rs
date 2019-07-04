@@ -107,20 +107,24 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
         unimplemented!()
     }),
 
+    // Branches to the branch address if register rs equals to rt.
     &(Op::Beq, "beq", OpC::B, &|rt, rs, _| {
         if rt == rs { 1 } else { 0 }
     }),
 
+    // Branches to the branch address if register rs is not equal to rt.
     &(Op::Bne, "bne", OpC::B, &|rt, rs, _| {
-        unimplemented!()
+        if rt != rs { 1 } else { 0 }
     }),
 
-    &(Op::Blez, "blez", OpC::B, &|rt, rs, _| {
-        unimplemented!()
+    // Branches to the branch address if register rs is less than 0.
+    &(Op::Blez, "blez", OpC::B, &|_, rs, _| {
+        if (rs as i64) < 0 { 1 } else { 0 }
     }),
 
-    &(Op::Bgtz, "bgtz", OpC::B, &|rt, rs, _| {
-        unimplemented!()
+    // Branches to the branch address if register rs is greater than 0.
+    &(Op::Bgtz, "bgtz", OpC::B, &|_, rs, _| {
+        if (rs as i64) > 0 { 1 } else { 0 }
     })],
 
     /* ROW: 1 */

@@ -153,7 +153,7 @@ impl fmt::Display for Inst {
                     }, OpC::J => {
                         write!(f, "{} {:#x}\n", self.op_str(), self.target())
                     }, OpC::B => {
-                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], self.offset() as i16 as i64)
+                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], (self.offset() as i16 as i32) << 2)
                     }, OpC::R => {
                         write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
                     }, OpC::C => {
