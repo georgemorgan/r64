@@ -96,8 +96,8 @@ impl CPU {
     }
 
     fn exec_ldst(&mut self, i: Inst, mc: &mut MC) {
-        let base = self.rgpr(i.rs()) as i32;
-        let offset = i.offset() as i16 as i32;
+        let base = self.rgpr(i.rs()) as i64;
+        let offset = i.offset() as i16 as i64;
 
         match i.class() {
             OpC::L => {
@@ -108,7 +108,7 @@ impl CPU {
             OpC::S => {
                 let rt = i.rtv(self);
                 let val = i.function()(rt, 0, 0) as u32;
-                mc.write(val, (base + offset) as u32);
+                mc.write((base + offset) as u32, val);
             },
             _ => ()
         }
