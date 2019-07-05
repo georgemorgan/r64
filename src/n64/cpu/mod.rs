@@ -206,6 +206,30 @@ impl CPU {
 
     }
 
+    pub fn exec_cop1(&mut self, _i: Inst) {
+        unimplemented!();
+    }
+
+    pub fn exec(&mut self, i: Inst, mc: &mut MC) {
+
+        match i.class() {
+            OpC::I => {
+                self.exec_imm(i);
+            }, OpC::L | OpC::S => {
+                self.exec_ldst(i, mc);
+            }, OpC::J => {
+                self.exec_jump(i);
+            }, OpC::B => {
+                self.exec_branch(i);
+            }, OpC::R => {
+                self.exec_reg(i);
+            } _ => {
+                panic!("Invalid instruction class {:#x}", i.class() as u32);
+            }
+        }
+
+    }
+
     pub fn cycle(&mut self, mc: &mut MC) {
 
         let op = mc.read(self.pc as u32);
@@ -221,27 +245,13 @@ impl CPU {
             Op::Cop0 => {
                 self.exec_cop0(i);
             }, Op::Cop1 => {
-                unimplemented!();
+                self.exec_cop1(i);
             }, Op::Cop2 => {
                 panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor.");
             }, Op::Reserved => {
                 panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode());
             }, _ => {
-                match i.class() {
-                    OpC::I => {
-                        self.exec_imm(i);
-                    }, OpC::L | OpC::S => {
-                        self.exec_ldst(i, mc);
-                    }, OpC::J => {
-                        self.exec_jump(i);
-                    }, OpC::B => {
-                        self.exec_branch(i);
-                    }, OpC::R => {
-                        self.exec_reg(i);
-                    } _ => {
-                        panic!("Invalid instruction class {:#x}", i.class() as u32);
-                    }
-                }
+                self.exec(i, mc);
             }
         };
 
