@@ -169,12 +169,6 @@ impl CPU {
         self.wgpr(rd, i.rd())
     }
 
-    /* perform coprocessor0 instructions */
-
-    pub fn exec_cop1(&mut self, _i: Inst) {
-        unimplemented!();
-    }
-
     pub fn exec(&mut self, i: Inst, mc: &mut MC) {
 
         match i.class() {

@@ -153,8 +153,6 @@ impl fmt::Display for Inst {
                         write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
                     }, OpC::C => {
                         write!(f, "coprocessor inst... ")
-                    } _ => {
-                        panic!("Unimplemented instruction class {:#x}", self.class() as u32)
                     }
                 }
             }

@@ -174,16 +174,16 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 2 */
 
-    [&(Op::Cop0, "cop0", OpC::I, &|_, _, _| {
+    [&(Op::Cop0, "cop0", OpC::C, &|_, _, _| {
         print!("COP!");
         unimplemented!()
     }),
 
-    &(Op::Cop1, "cop1", OpC::I, &|_, _, _| {
+    &(Op::Cop1, "cop1", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Cop2, "cop2", OpC::I, &|_, _, _| {
+    &(Op::Cop2, "cop2", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -200,29 +200,29 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     }),
 
     // Branches to the branch address if register rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Blezl, "blezl", OpC::B, &|rt, rs, _| {
+    &(Op::Blezl, "blezl", OpC::B, &|_, rs, _| {
         if (rs as i64) < 0 { 1 } else { 0 }
     }),
 
-    &(Op::Bgtzl, "bgtzl", OpC::B, &|rt, rs, _| {
+    &(Op::Bgtzl, "bgtzl", OpC::B, &|_, rs, _| {
         if (rs as i64) > 0 { 1 } else { 0 }
     })],
 
     /* ROW: 3 */
 
-    [&(Op::Daddi, "daddi", OpC::I, &|_, rs, imm| {
+    [&(Op::Daddi, "daddi", OpC::I, &|_, _rs, _imm| {
         unimplemented!()
     }),
 
-    &(Op::Daddiu, "daddiu", OpC::I, &|_, rs, imm| {
+    &(Op::Daddiu, "daddiu", OpC::I, &|_, _rs, _imm| {
         unimplemented!()
     }),
 
-    &(Op::Ldl, "ldl", OpC::L, &|val, _, _| {
+    &(Op::Ldl, "ldl", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Ldr, "ldr", OpC::L, &|val, _, _| {
+    &(Op::Ldr, "ldr", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
@@ -241,7 +241,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
         (val & 0xffff) as i16 as i64 as u64
      }),
 
-    &(Op::Lwl, "lwl", OpC::L, &|val, _, _| {
+    &(Op::Lwl, "lwl", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
@@ -257,7 +257,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
         (val & 0xffff) as u16 as u64
     }),
 
-    &(Op::Lwr, "lwr", OpC::L, &|val, _, _| {
+    &(Op::Lwr, "lwr", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
@@ -273,7 +273,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
         (rt & 0xffff) as u64
     }),
 
-    &(Op::Swl, "swl", OpC::S, &|rt, _, _| {
+    &(Op::Swl, "swl", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
@@ -281,15 +281,15 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
         rt as u32 as u64
     }),
 
-    &(Op::Sdl, "sdl", OpC::S, &|rt, _, _| {
+    &(Op::Sdl, "sdl", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Sdr, "sdr", OpC::S, &|rt, _, _| {
+    &(Op::Sdr, "sdr", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Swr, "swr", OpC::S, &|rt, _, _| {
+    &(Op::Swr, "swr", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
@@ -299,65 +299,65 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 6 */
 
-    [&(Op::Ll, "ll", OpC::L, &|val, _, _| {
+    [&(Op::Ll, "ll", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Lwc1, "lwc1", OpC::L, &|val, _, _| {
+    &(Op::Lwc1, "lwc1", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Lwc2, "lwc2", OpC::L, &|val, _, _| {
+    &(Op::Lwc2, "lwc2", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Lld, "lld", OpC::L, &|val, _, _| {
+    &(Op::Lld, "lld", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Ldc1, "ldc1", OpC::L, &|val, _, _| {
+    &(Op::Ldc1, "ldc1", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Ldc2, "ldc2", OpC::L, &|val, _, _| {
+    &(Op::Ldc2, "ldc2", OpC::L, &|_val, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Ld, "ld", OpC::L, &|val, _, _| {
+    &(Op::Ld, "ld", OpC::L, &|_val, _, _| {
         unimplemented!()
     })],
 
     /* ROW: 7 */
 
-    [&(Op::Sc, "sc", OpC::S, &|rt, _, _| {
+    [&(Op::Sc, "sc", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Swc1, "swc1", OpC::S, &|rt, _, _| {
+    &(Op::Swc1, "swc1", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Swc2, "swc2", OpC::S, &|rt, _, _| {
+    &(Op::Swc2, "swc2", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Scd, "scd", OpC::S, &|rt, _, _| {
+    &(Op::Scd, "scd", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Sdc1, "sdc1", OpC::S, &|rt, _, _| {
+    &(Op::Sdc1, "sdc1", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Sdc2, "sdc2", OpC::S, &|rt, _, _| {
+    &(Op::Sdc2, "sdc2", OpC::S, &|_rt, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Sd, "sd", OpC::S, &|rt, _, _| 0)],
+    &(Op::Sd, "sd", OpC::S, &|_rt, _, _| 0)],
 ];
 
 /* A constant 2-d array of the opcode values. */
@@ -365,31 +365,31 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
 
-    [&(Op::Sll, "sll", OpC::R, &|rt, rs, sa| {
+    [&(Op::Sll, "sll", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Srl, "srl", OpC::R, &|rt, rs, sa| {
+    &(Op::Srl, "srl", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Sra, "sra", OpC::R, &|rt, rs, sa| {
+    &(Op::Sra, "sra", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Sllv, "sllv", OpC::R, &|rt, rs, sa| {
+    &(Op::Sllv, "sllv", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Srlv, "srlv", OpC::R, &|rt, rs, sa| {
+    &(Op::Srlv, "srlv", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Srav, "srav", OpC::R, &|rt, rs, sa| {
+    &(Op::Srav, "srav", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     })],
 
@@ -456,69 +456,69 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 3 */
 
-    [&(Op::Mult, "mult", OpC::R, &|rt, rs, _| {
+    [&(Op::Mult, "mult", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Multu, "multu", OpC::R, &|rt, rs, _| {
+    &(Op::Multu, "multu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Div, "div", OpC::R, &|rt, rs, _| {
+    &(Op::Div, "div", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Divu, "divu", OpC::R, &|rt, rs, _| {
+    &(Op::Divu, "divu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Dmult, "dmult", OpC::R, &|rt, rs, _| {
+    &(Op::Dmult, "dmult", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Dmultu, "dmultu", OpC::R, &|rt, rs, _| {
+    &(Op::Dmultu, "dmultu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Ddiv, "ddiv", OpC::R, &|rt, rs, _| {
+    &(Op::Ddiv, "ddiv", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Ddivu    , "ddivu", OpC::R, &|rt, rs, _| {
+    &(Op::Ddivu    , "ddivu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     })],
 
     /* ROW: 4 */
 
-    [&(Op::Add, "add", OpC::R, &|rt, rs, _| {
+    [&(Op::Add, "add", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Addu, "addu", OpC::R, &|rt, rs, _| {
+    &(Op::Addu, "addu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Sub, "sub", OpC::R, &|rt, rs, _| {
+    &(Op::Sub, "sub", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Subu, "subu", OpC::R, &|rt, rs, _| {
+    &(Op::Subu, "subu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::And, "and", OpC::R, &|rt, rs, _| {
+    &(Op::And, "and", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Or, "or", OpC::R, &|rt, rs, _| {
+    &(Op::Or, "or", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Xor, "xor", OpC::R, &|rt, rs, _| {
+    &(Op::Xor, "xor", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Nor, "nor", OpC::R, &|rt, rs, _| {
+    &(Op::Nor, "nor", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     })],
 
@@ -528,55 +528,55 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     &RESERVED,
 
-    &(Op::Slt, "slt", OpC::R, &|rt, rs, _| {
+    &(Op::Slt, "slt", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Sltu, "sltu", OpC::R, &|rt, rs, _| {
+    &(Op::Sltu, "sltu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Dadd, "dadd", OpC::R, &|rt, rs, _| {
+    &(Op::Dadd, "dadd", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Daddu, "daddu", OpC::R, &|rt, rs, _| {
+    &(Op::Daddu, "daddu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Dsub, "dsub", OpC::R, &|rt, rs, _| {
+    &(Op::Dsub, "dsub", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Dsubu, "dsubu", OpC::R, &|rt, rs, _| {
+    &(Op::Dsubu, "dsubu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     })],
 
     /* ROW: 6 */
 
-    [&(Op::Tge, "tge", OpC::R, &|rt, rs, _| {
+    [&(Op::Tge, "tge", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Tgeu, "tgeu", OpC::R, &|rt, rs, _| {
+    &(Op::Tgeu, "tgeu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Tlt, "tlt", OpC::R, &|rt, rs, _| {
+    &(Op::Tlt, "tlt", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Tltu, "tltu", OpC::R, &|rt, rs, _| {
+    &(Op::Tltu, "tltu", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Teq, "teq", OpC::R, &|rt, rs, _| {
+    &(Op::Teq, "teq", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Tne, "tne", OpC::R, &|rt, rs, _| {
+    &(Op::Tne, "tne", OpC::R, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
@@ -584,31 +584,31 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 7 */
 
-    [&(Op::Dsll, "dsll", OpC::R, &|rt, rs, sa| {
+    [&(Op::Dsll, "dsll", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Dsrl, "dsrl", OpC::R, &|rt, rs, sa| {
+    &(Op::Dsrl, "dsrl", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Dsra, "dsra", OpC::R, &|rt, rs, sa| {
+    &(Op::Dsra, "dsra", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Dsll32, "dsll32", OpC::R, &|rt, rs, sa| {
+    &(Op::Dsll32, "dsll32", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Dsrl32, "dsrl32", OpC::R, &|rt, rs, sa| {
+    &(Op::Dsrl32, "dsrl32", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     }),
 
-    &(Op::Dsra32, "dsra32", OpC::R, &|rt, rs, sa| {
+    &(Op::Dsra32, "dsra32", OpC::R, &|_rt, _rs, _sa| {
         unimplemented!()
     })],
 ];
@@ -618,21 +618,21 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Bltz, "bltz", OpC::B, &|rt, rs, _| {
+    [&(Op::Bltz, "bltz", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Bgez, "bgez", OpC::B, &|rt, rs, _| {
+    &(Op::Bgez, "bgez", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
     // Branches to the branch address if register rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Bltzl, "bltzl", OpC::B, &|rt, rs, _| {
+    &(Op::Bltzl, "bltzl", OpC::B, &|_rt, rs, _| {
         if (rs as i64) < 0 { 1 } else { 0 }
     }),
 
     // Branches to the branch address if register rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Bgezl, "bgezl", OpC::B, &|rt, rs, _| {
+    &(Op::Bgezl, "bgezl", OpC::B, &|_rt, rs, _| {
         if (rs as i64) > 0 { 1 } else { 0 }
     }),
 
@@ -673,19 +673,19 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 2 */
 
-    [&(Op::Bltzal, "bltzal", OpC::B, &|rt, rs, _| {
+    [&(Op::Bltzal, "bltzal", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Bgezal, "bgezal", OpC::B, &|rt, rs, _| {
+    &(Op::Bgezal, "bgezal", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Bltzall, "bltzall", OpC::B, &|rt, rs, _| {
+    &(Op::Bltzall, "bltzall", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 
-    &(Op::Bgezall, "bgezall", OpC::B, &|rt, rs, _| {
+    &(Op::Bgezall, "bgezall", OpC::B, &|_rt, _rs, _| {
         unimplemented!()
     }),
 

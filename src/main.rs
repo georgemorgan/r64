@@ -5,8 +5,8 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Read;
 
-use rustyline::error::ReadlineError;
-use rustyline::Editor;
+// use rustyline::error::ReadlineError;
+// use rustyline::Editor;
 
 /* Use the N64 module. */
 mod n64;
@@ -32,7 +32,7 @@ fn main() {
 
     /* Create the header. */
     let mut h_data = [0; N64_ROM_HEADER_SIZE];
-    rom_file.read_exact(&mut h_data);
+    rom_file.read_exact(&mut h_data).unwrap();
     let h_data_p: *const u8 = h_data.as_ptr();
     let h_p: *const N64_ROM_HEADER = h_data_p as *const _;
     let header: &N64_ROM_HEADER = unsafe { &*h_p };
@@ -63,37 +63,37 @@ fn main() {
         n64.cycle();
     }
 
-    let mut rl = Editor::<()>::new();
-    'main_loop: loop {
-        let readline = rl.readline("> ");
-        match readline {
-            Ok(line) => {
-                rl.add_history_entry(&line);
-                match line.as_ref() {
-                    // /* Prints the CPU state. */
-                    "print" | "p" => {
-                        println!("{:?}", n64.cpu);
-                    },
-                    // /* Prints the side effects of the last instruction. */
-                    "last" | "l" => {
-                        println!("{:?}", n64::cpu::print_last(&n64.cpu));
-                    },
-                    "quit" | "q" => {
-                        break 'main_loop;
-                    },
-                    /* Steps into a single instruction. */
-                    "step" | "s" | _ => {
-                        n64.cycle();
-                    },
-                }
-            },
-            Err(ReadlineError::Interrupted) => {
-                break
-            },
-            Err(err) => {
-                println!("Error: {:?}", err);
-                break
-            }
-        }
-    }
+    // let mut rl = Editor::<()>::new();
+    // 'main_loop: loop {
+    //     let readline = rl.readline("> ");
+    //     match readline {
+    //         Ok(line) => {
+    //             rl.add_history_entry(&line);
+    //             match line.as_ref() {
+    //                 // /* Prints the CPU state. */
+    //                 "print" | "p" => {
+    //                     println!("{:?}", n64.cpu);
+    //                 },
+    //                 // /* Prints the side effects of the last instruction. */
+    //                 "last" | "l" => {
+    //                     println!("{:?}", n64::cpu::print_last(&n64.cpu));
+    //                 },
+    //                 "quit" | "q" => {
+    //                     break 'main_loop;
+    //                 },
+    //                 /* Steps into a single instruction. */
+    //                 "step" | "s" | _ => {
+    //                     n64.cycle();
+    //                 },
+    //             }
+    //         },
+    //         Err(ReadlineError::Interrupted) => {
+    //             break
+    //         },
+    //         Err(err) => {
+    //             println!("Error: {:?}", err);
+    //             break
+    //         }
+    //     }
+    // }
 }

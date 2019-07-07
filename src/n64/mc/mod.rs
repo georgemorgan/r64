@@ -9,7 +9,6 @@ use n64::pif::PIF;
 
 /* N64 memory sizes. */
 pub const N64_IRAM_SIZE: usize = 0x400000;
-pub const N64_ERAM_SIZE: usize = 0x400000;
 
 /*
     0x0000 0000 to 0x03EF FFFF RDRAM Memory
@@ -123,8 +122,6 @@ pub struct MC {
 
     /* 4MB internal RDRAM. */
     iram: Box<[u8]>,
-    /* 4MB expansion RDRAM. */
-    eram: Box<[u8]>,
     /* Cartridge ROM. */
     crom: Box<[u8]>,
 
@@ -157,8 +154,6 @@ impl MC {
 
             /* Allocate the IRAM. */
             iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
-            /* Allocate the ERAM. */
-            eram: vec![0; N64_ERAM_SIZE].into_boxed_slice(),
             /* Own of the CROM. */
             crom: cr,
 
@@ -178,8 +173,10 @@ impl MC {
 
     /* Reads a word from the memory map. */
     pub fn read(&self, vaddr: u32) -> u32 {
+
         /* Convert the virtual address to a physical address. */
         let paddr = vtop(vaddr);
+
         /* Match the memory address to a peripheral address range. */
         match paddr {
             RDRAM_MEM_START ... RDRAM_MEM_END => {
@@ -234,8 +231,10 @@ impl MC {
 
     /* Writes a word to the provided N64's memory map. */
     pub fn write(&mut self, vaddr: u32, value: u32) {
+
         /* Convert the virtual address to the physical address. */
         let paddr = vtop(vaddr);
+
         /* Match the memory address to a peripheral address range. */
         match paddr {
             RDRAM_MEM_START ... RDRAM_MEM_END => {

@@ -1,21 +1,13 @@
 /* n64.rs - A top-level module that concatenates the sub-modules of the emulator. */
 
 mod vi;
-use self::vi::VI;
 mod ai;
-use self::ai::AI;
 mod mi;
-use self::mi::MI;
 mod pi;
-use self::pi::PI;
 mod ri;
-use self::ri::RI;
 mod rsp;
-use self::rsp::RSP;
 mod rdp;
-use self::rdp::RDP;
 mod pif;
-use self::pif::PIF;
 mod mc;
 use self::mc::MC;
 pub mod cpu;
