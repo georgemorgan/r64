@@ -131,45 +131,45 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // Sign-extends the 16-bit immediate and adds it to register rs. Stores the 32-bit result to register rt (sign-extends the result in the 64-bit mode).
     // Generates an exception if a 2's complement integer overflow occurs.
-    [&(Op::Addi, "addi", OpC::I, &|_, rs, imm| {
-        (rs as i64 + imm as i16 as i64) as u64
+    [&(Op::Addi, "addi", OpC::I, &|_, rs, i| {
+        (rs as i64 + i as i16 as i64) as u64
     }),
 
     // Sign-extends the 16-bit immediate and adds it to register rs. Stores the 32-bit result to register rt (sign-extends the result in the 64-bit mode).
     // Does not generate an exception even if an integer overflow occurs.
-    &(Op::Addiu, "addiu", OpC::I, &|_, rs, imm| {
-        (rs as i64 + imm as i16 as i64) as u64
+    &(Op::Addiu, "addiu", OpC::I, &|_, rs, i| {
+        (rs as i64 + i as i16 as i64) as u64
     }),
 
     // Sign-extends the 16-bit immediate and compares it with register rs as a signed integer. If rs is less than the immediate, stores 1 to register rt; otherwise, stores 0 to register rt.
-    &(Op::Slti, "slti", OpC::I, &|_, rs, imm| {
-        if (rs as i64) < imm as i16 as i64 { 1 } else { 0 }
+    &(Op::Slti, "slti", OpC::I, &|_, rs, i| {
+        if (rs as i64) < i as i16 as i64 { 1 } else { 0 }
     }),
 
     // Sign-extends the 16-bit immediate and compares it with register rs as an unsigned integer. If rs is less than the immediate, stores 1 to register rt; otherwise, stores 0 to register rt.
-    &(Op::Sltiu, "sltiu", OpC::I, &|_, rs, imm| {
-        if (rs as u64) < imm as i16 as i64 as u64 { 1 } else { 0 }
+    &(Op::Sltiu, "sltiu", OpC::I, &|_, rs, i| {
+        if (rs as u64) < i as i16 as i64 as u64 { 1 } else { 0 }
     }),
 
     // Zero-extends the 16-bit immediate, ANDs it with register rs, and stores the result to register rt.
-    &(Op::Andi, "andi", OpC::I, &|_, rs, imm| {
-        (rs as u64) & (imm as u64)
+    &(Op::Andi, "andi", OpC::I, &|_, rs, i| {
+        (rs as u64) & (i as u64)
     }),
 
     // Zero-extends the 16-bit immediate, ORs it with register rs, and stores the result to register rt.
-    &(Op::Ori, "ori", OpC::I, &|_, rs, imm| {
-        (rs as u64) | (imm as u64)
+    &(Op::Ori, "ori", OpC::I, &|_, rs, i| {
+        (rs as u64) | (i as u64)
     }),
 
     // Zero-extends the 16-bit immediate, exclusive-ORs it with register rs, and stores the result to register rt.
-    &(Op::Xori, "xori", OpC::I, &|_, rs, imm| {
-        (rs as u64) ^ (imm as u64)
+    &(Op::Xori, "xori", OpC::I, &|_, rs, i| {
+        (rs as u64) ^ (i as u64)
     }),
 
     // Shifts the 16-bit immediate 16 bits to the left, and clears the low-order 16 bits of the word to 0.
     // Stores the result to register rt (by sign-extending the result in the 64-bit mode).
-    &(Op::Lui, "lui", OpC::I, &|_, _, imm| {
-        (((imm as u32) << 16) & !0xFFFF) as i32 as i64 as u64
+    &(Op::Lui, "lui", OpC::I, &|_, _, i| {
+        (((i as u32) << 16) & !0xFFFF) as i32 as i64 as u64
     })],
 
     /* ROW: 2 */
@@ -209,11 +209,11 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 3 */
 
-    [&(Op::Daddi, "daddi", OpC::I, &|_, _rs, _imm| {
+    [&(Op::Daddi, "daddi", OpC::I, &|_, _rs, _i| {
         unimplemented!()
     }),
 
-    &(Op::Daddiu, "daddiu", OpC::I, &|_, _rs, _imm| {
+    &(Op::Daddiu, "daddiu", OpC::I, &|_, _rs, _i| {
         unimplemented!()
     }),
 
