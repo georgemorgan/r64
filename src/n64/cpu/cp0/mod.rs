@@ -27,8 +27,8 @@ pub const CP0_NAMES: [&'static str; GPR_SIZE] = [
 ];
 
 use n64::cpu::GPR_SIZE;
-
-const CP0_CONFIG: usize = 0x10;
+use n64::cpu::instruction::Inst;
+use n64::cpu::op::Op;
 
 pub struct CP0 {
     /* the 32-bit cop0 general purpose registers */
@@ -45,13 +45,60 @@ impl CP0 {
     }
 
     /* reads from a cop0 register */
-    pub fn rd(&self, reg: usize) -> u64 {
+    pub fn rgpr(&self, reg: usize) -> u64 {
         self.regs[reg] as u64
     }
 
     /* writes to a cop0 register */
-    pub fn wr(&mut self, val: u64, reg: usize) {
+    pub fn wgpr(&mut self, val: u64, reg: usize) {
         self.regs[reg] = val as u32;
+    }
+
+    pub fn exec(&mut self, i: Inst) {
+
+        match i.op() {
+
+            Op::Mf => {
+                let rt = self.rgpr(i.rt());
+                self.wgpr(rt, i.rt())
+            }, Op::Dmf => {
+                let rt = self.rgpr(i.rt());
+                self.wgpr(rt, i.rt())
+            }, Op::Cf => {
+                unimplemented!()
+            }, Op::Mt => {
+                let rt = self.rgpr(i.rt());
+                self.wgpr(rt, i.rt())
+            }, Op::Dmt => {
+                // Transfers the contents of the general purpose register rt of the CPU to the general purpose register rd of coprocessor z.
+                let rt = self.rgpr(i.rt());
+                self.wgpr(rt, i.rt());
+            }, Op::Ct => {
+                unimplemented!();
+            }, Op::Bcf => {
+                unimplemented!();
+            }, Op::Bct => {
+                unimplemented!();
+            }, Op::Bcfl => {
+                unimplemented!();
+            }, Op::Bctl => {
+                unimplemented!();
+            }, Op::Tlbr => {
+                unimplemented!();
+            }, Op::Tlbwi => {
+                unimplemented!();
+            }, Op::Tlbwr => {
+                unimplemented!();
+            }, Op::Tlbp => {
+                unimplemented!();
+            }, Op::Eret => {
+                unimplemented!();
+            }, _ => {
+
+            }
+
+        };
+
     }
 
 }

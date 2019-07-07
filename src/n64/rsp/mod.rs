@@ -31,6 +31,86 @@ const SP_STATUS_SIGNAL5: u32 = (1 << 12);
 const SP_STATUS_SIGNAL6: u32 = (1 << 13);
 const SP_STATUS_SIGNAL7: u32 = (1 << 14);
 
+/*
+
+SP_BASE_REG - 0x04040000
+
+0x04000000 to 0x04000FFF R/W SP_DMEM read/write (4KB)
+0x04001000 to 0x04001FFF R/W SP_IMEM read/write (4KB)
+0x04002000 to 0x0403FFFF *   Unused
+
+0x04040000 to 0x04040003  SP_MEM_ADDR_REG //Master, SP memory address
+   (RW): [11:0] DMEM/IMEM address
+         [12]   0=DMEM,1=IMEM
+
+0x04040004 to 0x04040007  SP_DRAM_ADDR_REG //Slave, SP DRAM DMA address
+   (RW): [23:0] RDRAM address
+
+0x04040008 to 0x0404000B  SP_RD_LEN_REG //SP read DMA length
+   (RW): [11:0] length
+         [19:12] count
+         [31:20] skip
+              direction: I/DMEM <- RDRAM
+
+0x0404000C to 0x0404000F  SP_WR_LEN_REG //SP write DMA length
+   (RW): [11:0] length
+         [19:12] count
+         [31:20] skip
+              direction: I/DMEM to RDRAM
+
+0x04040010 to 0x04040013  SP_STATUS_REG //SP status
+    (W): [0]  clear halt          (R): [0]  halt
+         [1]  set halt                 [1]  broke
+         [2]  clear broke              [2]  dma busy
+         [3]  clear intr               [3]  dma full
+         [4]  set intr                 [4]  io full
+         [5]  clear sstep              [5]  single step
+         [6]  set sstep                [6]  interrupt on break
+         [7]  clear intr on break      [7]  signal 0 set
+         [8]  set intr on break        [8]  signal 1 set
+         [9]  clear signal 0           [9]  signal 2 set
+         [10] set signal 0             [10] signal 3 set
+         [11] clear signal 1           [11] signal 4 set
+         [12] set signal 1             [12] signal 5 set
+         [13] clear signal 2           [13] signal 6 set
+         [14] set signal 2             [14] signal 7 set
+         [15] clear signal 3
+         [16] set signal 3
+         [17] clear signal 4
+         [18] set signal 4
+         [19] clear signal 5
+         [20] set signal 5
+         [21] clear signal 6
+         [22] set signal 6
+         [23] clear signal 7
+         [24] set signal 7
+
+0x04040014 to 0x04040017  SP_DMA_FULL_REG //SP DMA full
+    (R): [0] valid bit
+             dma full
+
+0x04040018 to 0x0404001B  SP_DMA_BUSY_REG //SP DMA busy
+    (R): [0] valid bit
+             dma busy
+
+0x0404001C to 0x0404001F  SP_SEMAPHORE_REG //SP semaphore
+    (R): [0] semaphore flag (set on read)
+    (W): [] clear semaphore flag
+
+0x04040020 to 0x0407FFFF * Unused
+
+0x04080000 to 0x04080003  SP_PC_REG //SP PC
+   (RW): [11:0] program counter
+
+0x04080004 to 0x04080007  SP_IBIST_REG //SP IMEM BIST REG
+    (W): [0] BIST check           (R): [0] BIST check
+         [1] BIST go                   [1] BIST go
+         [2] BIST clear                [2] BIST done
+                                       [3-6] BIST fail
+0x04080008 to 0x040FFFFF * Unused
+
+*/
+
 pub struct RSP {
     /* 4KB data memory. */
     pub dmem: Box<[u8]>,

@@ -2,7 +2,6 @@
 
 use std::fmt;
 
-use n64::cpu::CPU;
 use n64::cpu::op::*;
 use n64::cpu::GPR_NAMES;
 use n64::cpu::CP0_NAMES;
@@ -88,29 +87,14 @@ impl Inst {
         return ((self.0 >> 21) & 0b11111) as usize;
     }
 
-    /* Returns the source register's value. */
-    pub fn rsv(&self, cpu: &CPU) -> u64 {
-        return cpu.rgpr(((self.0 >> 21) & 0b11111) as usize);
-    }
-
     /* Returns the instruction's target register. */
     pub fn rt(&self) -> usize {
         return ((self.0 >> 16) & 0b11111) as usize;
     }
 
-    /* Returns the target register's value. */
-    pub fn rtv(&self, cpu: &CPU) -> u64 {
-        return cpu.rgpr(((self.0 >> 16) & 0b11111) as usize);
-    }
-
     /* Returns the instruciton's destination register. */
     pub fn rd(&self) -> usize {
         return ((self.0 >> 11) & 0b11111) as usize;
-    }
-
-    /* Writes the value to the destination register. */
-    pub fn wrd(&self, cpu: &mut CPU, value: u64) {
-        return cpu.wgpr(value, self.rd())
     }
 
     /* Returns the instruction's shift amount. */
@@ -151,7 +135,18 @@ impl fmt::Display for Inst {
                     }, OpC::L | OpC::S => {
                         write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()])
                     }, OpC::J => {
-                        write!(f, "{} {:#x}\n", self.op_str(), self.target())
+
+                        match self.op() {
+
+                            Op::J | Op::Jal  => {
+                                write!(f, "{} {:#x}\n", self.op_str(), self.target())
+                            }, Op::Jr | Op::Jalr => {
+                                write!(f, "{} {}\n", self.op_str(),GPR_NAMES[self.rs()])
+                            }, _ => {
+                                panic!("Unimplemented jump kind {:#x}", self.op() as u32)
+                            }
+
+                        }
                     }, OpC::B => {
                         write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], (self.offset() as i16 as i32) << 2)
                     }, OpC::R => {

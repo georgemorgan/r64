@@ -58,6 +58,11 @@ fn main() {
     /* Create the N64. */
     let mut n64 = N64::new(crom, prom);
 
+    loop {
+        println!("{:?}", n64::cpu::print_last(&n64.cpu));
+        n64.cycle();
+    }
+
     let mut rl = Editor::<()>::new();
     'main_loop: loop {
         let readline = rl.readline("> ");

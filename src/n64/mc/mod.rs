@@ -189,7 +189,7 @@ impl MC {
             }, SP_DMEM_START ... SP_DMEM_END => {
                 rmem(paddr - SP_DMEM_START, &self.rsp.dmem)
             }, SP_IMEM_START ... SP_IMEM_END => {
-                rmem(paddr - SP_DMEM_START, &self.rsp.imem)
+                rmem(paddr - SP_IMEM_START, &self.rsp.imem)
             }, SP_REG_START ... SP_REG_END => {
                 self.rsp.rreg(paddr)
             }, RDP_CMD_START ... RDP_CMD_END => {
@@ -245,7 +245,7 @@ impl MC {
             }, SP_DMEM_START ... SP_DMEM_END => {
                 wmem(paddr - SP_DMEM_START, value, &mut self.rsp.dmem)
             }, SP_IMEM_START ... SP_IMEM_END => {
-                wmem(paddr - SP_DMEM_START, value, &mut self.rsp.imem)
+                wmem(paddr - SP_IMEM_START, value, &mut self.rsp.imem)
             }, SP_REG_START ... SP_REG_END => {
                 self.rsp.wreg(paddr, value)
             }, RDP_CMD_START ... RDP_CMD_END => {

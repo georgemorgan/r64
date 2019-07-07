@@ -12,6 +12,55 @@ const PI_REG_BSD_DOM2_PWD: u32 = 0x0460_0028;
 const PI_REG_BSD_DOM2_PGS: u32 = 0x0460_002C;
 const PI_REG_BSD_DOM2_RLS: u32 = 0x0460_0030;
 
+/*
+
+PI_BASE_REG - 0x04600000
+
+0x04600000 to 0x04600003  PI_DRAM_ADDR_REG  //PI DRAM address
+   (RW): [23:0] starting RDRAM address
+
+0x04600004 to 0x04600007  PI_CART_ADDR_REG //PI pbus (cartridge) address
+   (RW): [31:0] starting AD16 address
+
+0x04600008 to 0x0460000B  PI_RD_LEN_REG //PI read length
+   (RW): [23:0] read data length
+
+0x0460000C to 0x0460000F  PI_WR_LEN_REG //PI write length
+   (RW): [23:0] write data length
+
+0x04600010 to 0x04600013 PI_STATUS_REG //PI status
+    (R): [0] DMA busy             (W): [0] reset controller
+         [1] IO busy                       (and abort current op)
+         [2] error                     [1] clear intr
+
+0x04600014 to 0x04600017  PI_BSD_DOM1_LAT_REG or PI_DOMAIN1_REG //PI dom1 latency
+   (RW): [7:0] domain 1 device latency
+
+0x04600018 to 0x0460001B  PI_BSD_DOM1_PWD_REG //PI dom1 pulse width
+   (RW): [7:0] domain 1 device R/W strobe pulse width
+
+0x0460001C to 0x0460001F  PI_BSD_DOM1_PGS_REG //PI dom1 page size
+   (RW): [3:0] domain 1 device page size
+
+0x04600020 to 0x04600023  PI_BSD_DOM1_RLS_REG //PI dom1 release
+   (RW): [1:0] domain 1 device R/W release duration
+
+0x04600024 to 0x04600027  PI_BSD_DOM2_LAT_REG or PI_DOMAIN2_REG //PI dom2 latency
+   (RW): [7:0] domain 2 device latency
+
+0x04600028 to 0x0460002B  PI_BSD_DOM2_PWD_REG //PI dom2 pulse width
+   (RW): [7:0] domain 2 device R/W strobe pulse width
+
+0x0460002C to 0x0460002F  PI_BSD_DOM2_PGS_REG //PI dom2 page size
+   (RW): [3:0] domain 2 device page size
+
+0x04600030 to 0x04600033  PI_BSD_DOM2_RLS_REG //PI dom2 release
+   (RW): [1:0] domain 2 device R/W release duration
+
+0x04600034 to 0x046FFFFF  Unused
+
+*/
+
 pub struct PI {
     dram_addr: u32,
     cart_addr: u32,

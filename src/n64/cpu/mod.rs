@@ -15,6 +15,13 @@ CPU0
 
 */
 
+const GPR_NAMES: [&'static str; GPR_SIZE] = [
+    "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3",
+    "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+    "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
+    "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra",
+];
+
 use std::fmt;
 
 use n64::MC;
@@ -28,14 +35,19 @@ use self::instruction::Inst;
 mod cp0;
 use self::cp0::*;
 
+mod cp1;
+use self::cp1::*;
+
 /* Size of the general purpose register file. */
 const GPR_SIZE: usize = 32;
 
 pub struct CPU {
+    /* mmu / tlb co-processor */
     pub cp0: CP0,
+    /* floating point co-processor */
+    pub cp1: CP1,
 
     pub gpr: [u64; GPR_SIZE],
-    pub fpr: [f64; GPR_SIZE],
 
     pub hi: u64,
     pub lo: u64,
@@ -51,9 +63,9 @@ impl CPU {
     pub fn new(pc: u64) -> CPU {
         CPU {
             cp0: CP0::new(),
+            cp1: CP1::new(),
 
             gpr: [0; GPR_SIZE],
-            fpr: [0.0; GPR_SIZE],
 
             hi: 0,
             lo: 0,
@@ -68,10 +80,6 @@ impl CPU {
         self.gpr[reg]
     }
 
-    fn rfpr(&self, reg: usize) -> f64 {
-        self.fpr[reg]
-    }
-
     fn wgpr(&mut self, val: u64, reg: usize) {
         match reg {
             0 => {
@@ -82,14 +90,10 @@ impl CPU {
         }
     }
 
-    fn wfpr(&mut self, val: f64, reg: usize) {
-        self.fpr[reg] = val;
-    }
-
     /* Handlers for the 3 instruction formats. - Chapter 3.1 in NEC VR4300 manual. */
 
     fn exec_imm(&mut self, i: Inst) {
-        let rs = i.rsv(self);
+        let rs = self.rgpr(i.rs());
         let imm = i.imm();
         let rt = i.function()(0, rs, imm);
         self.wgpr(rt, i.rt());
@@ -106,16 +110,19 @@ impl CPU {
                 self.wgpr(rt, i.rt());
             },
             OpC::S => {
-                let rt = i.rtv(self);
+                let rt = self.rgpr(i.rt());
                 let val = i.function()(rt, 0, 0) as u32;
                 mc.write((base + offset) as u32, val);
-            },
-            _ => ()
+            }, _ => {
+
+            }
         }
     }
 
     fn exec_jump(&mut self, i: Inst) {
+
         match i.op() {
+
             Op::J => {
                 let target = i.target();
                 /* sub 4 here because we will inc the pc by 4 later */
@@ -127,84 +134,42 @@ impl CPU {
                 /* sub 4 here because we will inc the pc by 4 later */
                 self.pc = target - 4;
             }, Op::Jr => {
-                let target = i.rsv(self);
+                let target = self.rgpr(i.rs());
                 /* sub 4 here because we will inc the pc by 4 later */
                 self.pc = target - 4;
             }, Op::Jalr => {
-                let target = i.rsv(self);
+                let target = self.rgpr(i.rs());
                 let pc = self.pc;
-                i.wrd(self, pc);
+                self.wgpr(pc, i.rd());
                 /* sub 4 here because we will inc the pc by 4 later */
                 self.pc = target - 4;
-            }, _ => ()
+            }, _ => {
+
+            }
+
         }
     }
 
     fn exec_branch(&mut self, i: Inst) {
-        let rs = i.rsv(self);
-        let rt = i.rtv(self);
+        let rs = self.rgpr(i.rs());
+        let rt = self.rgpr(i.rt());
         let offset = ((i.offset() as i16 as i32) << 2) as i64;
 
         let should_branch = i.function()(rt, rs, 0);
         if should_branch > 0 {
-            /* sub 4 here because we will inc the pc by 4 later */
-            self.pc = (self.pc as i64 + offset) as u64 - 4;
+            self.pc = (self.pc as i64 + offset) as u64;
         }
     }
 
     /* Handler for the register (R-Type) instructions. */
     fn exec_reg(&mut self, i: Inst) {
-        let rs = i.rsv(self);
-        let rt = i.rtv(self);
+        let rs = self.rgpr(i.rs());
+        let rt = self.rgpr(i.rt());
         let rd = i.function()(rt, rs, i.sa());
-        i.wrd(self, rd);
+        self.wgpr(rd, i.rd())
     }
 
     /* perform coprocessor0 instructions */
-
-    fn exec_cop0(&mut self, i: Inst) {
-
-        match i.op() {
-            Op::Mf => {
-                let rt = self.cp0.rd(i.rt());
-                i.wrd(self, rt);
-            }, Op::Dmf => {
-                let rt = self.cp0.rd(i.rt());
-                i.wrd(self, rt);
-            }, Op::Cf => {
-                unimplemented!()
-            }, Op::Mt => {
-                let rt = i.rtv(self);
-                self.cp0.wr(rt, i.rd());
-            }, Op::Dmt => {
-                let rt = i.rtv(self);
-                self.cp0.wr(rt, i.rd());
-            }, Op::Ct => {
-                unimplemented!();
-            }, Op::Bcf => {
-                unimplemented!();
-            }, Op::Bct => {
-                unimplemented!();
-            }, Op::Bcfl => {
-                unimplemented!();
-            }, Op::Bctl => {
-                unimplemented!();
-            }, Op::Tlbr => {
-                unimplemented!();
-            }, Op::Tlbwi => {
-                unimplemented!();
-            }, Op::Tlbwr => {
-                unimplemented!();
-            }, Op::Tlbp => {
-                unimplemented!();
-            }, Op::Eret => {
-                unimplemented!();
-            }, _ => {
-
-            }
-        };
-
-    }
 
     pub fn exec_cop1(&mut self, _i: Inst) {
         unimplemented!();
@@ -243,9 +208,9 @@ impl CPU {
 
         match i.kind() {
             Op::Cop0 => {
-                self.exec_cop0(i);
+                self.cp0.exec(i);
             }, Op::Cop1 => {
-                self.exec_cop1(i);
+                self.cp1.exec(i);
             }, Op::Cop2 => {
                 panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor.");
             }, Op::Reserved => {
@@ -270,13 +235,6 @@ pub fn print_last(cpu: &CPU) {
     println!("{:02} ({}): {:#018X} ", i.rs(), GPR_NAMES[i.rs()], cpu.rgpr(i.rs()));
 }
 
-const GPR_NAMES: [&'static str; GPR_SIZE] = [
-    "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3",
-    "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
-    "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
-    "t8", "t9", "k0", "k1", "gp", "sp", "s8", "ra",
-];
-
 use self::cp0::CP0_NAMES;
 
 impl fmt::Debug for CPU {
@@ -300,18 +258,18 @@ impl fmt::Debug for CPU {
                 try!(writeln!(f, ""))
             }
 
-            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rd(r)))
+            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
         }
 
         try!(write!(f, "\n\nCPU Floating Point Registers:"));
 
-        for r in 0..GPR_SIZE {
-            if (r % REGS_PER_LINE) == 0 {
-                try!(writeln!(f, ""))
-            }
-
-            try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
-        }
+        // for r in 0..GPR_SIZE {
+        //     if (r % REGS_PER_LINE) == 0 {
+        //         try!(writeln!(f, ""))
+        //     }
+        //
+        //     try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
+        // }
 
         Ok(())
 
