@@ -122,27 +122,35 @@ impl CPU {
                 match i.op() {
 
                     Op::J => {
+
                         let target = i.target();
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
+
                     }, Op::Jal => {
+
                         let target = i.target();
                         let pc = self.pc;
                         self.wgpr(pc, 31);
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
+
                     }, Op::Jr => {
+
                         let target = self.rgpr(i.rs());
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
+
                     }, Op::Jalr => {
+
                         let target = self.rgpr(i.rs());
                         let pc = self.pc;
                         self.wgpr(pc, i.rd());
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
-                    }, _ => {
 
+                    }, _ => {
+                        panic!("Not a jump instruction.");
                     }
 
                 }
@@ -168,6 +176,7 @@ impl CPU {
             }, OpC::C => {
 
                 match i.kind() {
+
                     Op::Cop0 => {
                         self.cp0.exec(i);
                     }, Op::Cop1 => {
@@ -179,6 +188,7 @@ impl CPU {
                     }, _ => {
                         panic!("Not a coprocessor instruction.");
                     }
+                    
                 }
 
             }

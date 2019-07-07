@@ -175,7 +175,6 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     /* ROW: 2 */
 
     [&(Op::Cop0, "cop0", OpC::C, &|_, _, _| {
-        print!("COP!");
         unimplemented!()
     }),
 
