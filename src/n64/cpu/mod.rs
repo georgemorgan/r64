@@ -90,98 +90,80 @@ impl CPU {
         }
     }
 
-    /* Handlers for the 3 instruction formats. - Chapter 3.1 in NEC VR4300 manual. */
-
-    fn exec_imm(&mut self, i: Inst) {
-        let rs = self.rgpr(i.rs());
-        let imm = i.imm();
-        let rt = i.function()(0, rs, imm);
-        self.wgpr(rt, i.rt());
-    }
-
-    fn exec_ldst(&mut self, i: Inst, mc: &mut MC) {
-        let base = self.rgpr(i.rs()) as i64;
-        let offset = i.offset() as i16 as i64;
-
-        match i.class() {
-            OpC::L => {
-                let val = mc.read((base + offset) as u32) as u64;
-                let rt = i.function()(val, 0, 0);
-                self.wgpr(rt, i.rt());
-            },
-            OpC::S => {
-                let rt = self.rgpr(i.rt());
-                let val = i.function()(rt, 0, 0) as u32;
-                mc.write((base + offset) as u32, val);
-            }, _ => {
-
-            }
-        }
-    }
-
-    fn exec_jump(&mut self, i: Inst) {
-
-        match i.op() {
-
-            Op::J => {
-                let target = i.target();
-                /* sub 4 here because we will inc the pc by 4 later */
-                self.pc = target - 4;
-            }, Op::Jal => {
-                let target = i.target();
-                let pc = self.pc;
-                self.wgpr(pc, 31);
-                /* sub 4 here because we will inc the pc by 4 later */
-                self.pc = target - 4;
-            }, Op::Jr => {
-                let target = self.rgpr(i.rs());
-                /* sub 4 here because we will inc the pc by 4 later */
-                self.pc = target - 4;
-            }, Op::Jalr => {
-                let target = self.rgpr(i.rs());
-                let pc = self.pc;
-                self.wgpr(pc, i.rd());
-                /* sub 4 here because we will inc the pc by 4 later */
-                self.pc = target - 4;
-            }, _ => {
-
-            }
-
-        }
-    }
-
-    fn exec_branch(&mut self, i: Inst) {
-        let rs = self.rgpr(i.rs());
-        let rt = self.rgpr(i.rt());
-        let offset = ((i.offset() as i16 as i32) << 2) as i64;
-
-        let should_branch = i.function()(rt, rs, 0);
-        if should_branch > 0 {
-            self.pc = (self.pc as i64 + offset) as u64;
-        }
-    }
-
-    /* Handler for the register (R-Type) instructions. */
-    fn exec_reg(&mut self, i: Inst) {
-        let rs = self.rgpr(i.rs());
-        let rt = self.rgpr(i.rt());
-        let rd = i.function()(rt, rs, i.sa());
-        self.wgpr(rd, i.rd())
-    }
-
     pub fn exec(&mut self, i: Inst, mc: &mut MC) {
 
         match i.class() {
             OpC::I => {
-                self.exec_imm(i);
-            }, OpC::L | OpC::S => {
-                self.exec_ldst(i, mc);
+
+                let rs = self.rgpr(i.rs());
+                let imm = i.imm();
+                let rt = i.function()(0, rs, imm);
+                self.wgpr(rt, i.rt());
+
+            }, OpC::L => {
+
+                let base = self.rgpr(i.rs()) as i64;
+                let offset = i.offset() as i16 as i64;
+                let val = mc.read((base + offset) as u32) as u64;
+                let rt = i.function()(val, 0, 0);
+                self.wgpr(rt, i.rt());
+
+            }, OpC::S => {
+
+                let base = self.rgpr(i.rs()) as i64;
+                let offset = i.offset() as i16 as i64;
+                let rt = self.rgpr(i.rt());
+                let val = i.function()(rt, 0, 0) as u32;
+                mc.write((base + offset) as u32, val);
+
             }, OpC::J => {
-                self.exec_jump(i);
+
+                match i.op() {
+
+                    Op::J => {
+                        let target = i.target();
+                        /* sub 4 here because we will inc the pc by 4 later */
+                        self.pc = target - 4;
+                    }, Op::Jal => {
+                        let target = i.target();
+                        let pc = self.pc;
+                        self.wgpr(pc, 31);
+                        /* sub 4 here because we will inc the pc by 4 later */
+                        self.pc = target - 4;
+                    }, Op::Jr => {
+                        let target = self.rgpr(i.rs());
+                        /* sub 4 here because we will inc the pc by 4 later */
+                        self.pc = target - 4;
+                    }, Op::Jalr => {
+                        let target = self.rgpr(i.rs());
+                        let pc = self.pc;
+                        self.wgpr(pc, i.rd());
+                        /* sub 4 here because we will inc the pc by 4 later */
+                        self.pc = target - 4;
+                    }, _ => {
+
+                    }
+
+                }
+
             }, OpC::B => {
-                self.exec_branch(i);
+
+                let rs = self.rgpr(i.rs());
+                let rt = self.rgpr(i.rt());
+                let offset = ((i.offset() as i16 as i32) << 2) as i64;
+
+                let should_branch = i.function()(rt, rs, 0);
+                if should_branch > 0 {
+                    self.pc = (self.pc as i64 + offset) as u64;
+                }
+
             }, OpC::R => {
-                self.exec_reg(i);
+
+                let rs = self.rgpr(i.rs());
+                let rt = self.rgpr(i.rt());
+                let rd = i.function()(rt, rs, i.sa());
+                self.wgpr(rd, i.rd())
+
             } _ => {
                 panic!("Invalid instruction class {:#x}", i.class() as u32);
             }
