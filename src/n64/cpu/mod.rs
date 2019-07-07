@@ -93,6 +93,7 @@ impl CPU {
     pub fn exec(&mut self, i: Inst, mc: &mut MC) {
 
         match i.class() {
+
             OpC::I => {
 
                 let rs = self.rgpr(i.rs());
@@ -164,8 +165,22 @@ impl CPU {
                 let rd = i.function()(rt, rs, i.sa());
                 self.wgpr(rd, i.rd())
 
-            } _ => {
-                panic!("Invalid instruction class {:#x}", i.class() as u32);
+            }, OpC::C => {
+
+                match i.kind() {
+                    Op::Cop0 => {
+                        self.cp0.exec(i);
+                    }, Op::Cop1 => {
+                        self.cp1.exec(i);
+                    }, Op::Cop2 => {
+                        panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor.");
+                    }, Op::Reserved => {
+                        panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode());
+                    }, _ => {
+                        panic!("Not a coprocessor instruction.");
+                    }
+                }
+
             }
         }
 
@@ -182,19 +197,7 @@ impl CPU {
 
         println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
 
-        match i.kind() {
-            Op::Cop0 => {
-                self.cp0.exec(i);
-            }, Op::Cop1 => {
-                self.cp1.exec(i);
-            }, Op::Cop2 => {
-                panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor.");
-            }, Op::Reserved => {
-                panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode());
-            }, _ => {
-                self.exec(i, mc);
-            }
-        };
+        self.exec(i, mc);
 
         self.pc += 4;
 

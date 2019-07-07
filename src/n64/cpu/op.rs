@@ -711,29 +711,29 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Mf, "mf", OpC::R, &|_, _, _| {
+    [&(Op::Mf, "mf", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Dmf, "dmf", OpC::R, &|_, _, _| {
+    &(Op::Dmf, "dmf", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Cf, "cf", OpC::R, &|_, _, _| {
+    &(Op::Cf, "cf", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Mt, "mt", OpC::R, &|_, _, _| {
+    &(Op::Mt, "mt", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Dmt, "dmt", OpC::R, &|_, _, _| {
+    &(Op::Dmt, "dmt", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Ct, "ct", OpC::R, &|_, _, _| {
+    &(Op::Ct, "ct", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -741,7 +741,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 4 */
 
-    [&(Op::Bc, "bc", OpC::B, &|_, _, _| {
+    [&(Op::Bc, "bc", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -755,7 +755,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 5 */
 
-    [&(Op::Co, "co", OpC::I, &|_, _, _| {
+    [&(Op::Co, "co", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -784,19 +784,19 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Bcf, "bcf", OpC::R, &|_, _, _| {
+    [&(Op::Bcf, "bcf", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Bct, "bct", OpC::R, &|_, _, _| {
+    &(Op::Bct, "bct", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Bcfl, "bcfl", OpC::R, &|_, _, _| {
+    &(Op::Bcfl, "bcfl", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Bctl, "bctl", OpC::I, &|_, _, _| {
+    &(Op::Bctl, "bctl", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -846,11 +846,11 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     [&RESERVED,
 
-    &(Op::Tlbr, "tlbr", OpC::R, &|_, _, _| {
+    &(Op::Tlbr, "tlbr", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
-    &(Op::Tlbwi, "tlbwi", OpC::R, &|_, _, _| {
+    &(Op::Tlbwi, "tlbwi", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -858,7 +858,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED,
     &RESERVED,
 
-    &(Op::Tlbwr, "tlbwr", OpC::I, &|_, _, _| {
+    &(Op::Tlbwr, "tlbwr", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -866,7 +866,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 1 */
 
-    [&(Op::Tlbp, "tlbp", OpC::I, &|_, _, _| {
+    [&(Op::Tlbp, "tlbp", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
@@ -891,7 +891,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 3 */
 
-    [&(Op::Eret, "eret", OpC::I, &|_, _, _| {
+    [&(Op::Eret, "eret", OpC::C, &|_, _, _| {
         unimplemented!()
     }),
 
