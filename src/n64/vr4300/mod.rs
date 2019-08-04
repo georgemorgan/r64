@@ -28,208 +28,65 @@ use n64::*;
 
 mod cp0;
 mod cp1;
-mod op;
 mod instruction;
+mod op;
+mod pipeline;
 
 use self::cp0::*;
 use self::cp1::*;
 use self::op::*;
 use self::instruction::*;
+use self::pipeline::*;
 
 /* Size of the general purpose register file. */
 const GPR_SIZE: usize = 32;
 
-pub trait MIPS64 {
-    fn rgpr(&self, reg: usize) -> u64;
-    fn wgpr(&mut self, val: u64, reg: usize);
-}
-
 pub struct VR4300 {
+
+    /* 5 stage pipeline */
+    pipeline: Pipeline,
+
     /* mmu / tlb co-processor */
     pub cp0: CP0,
     /* floating point co-processor */
     pub cp1: CP1,
 
-    pub gpr: [u64; GPR_SIZE],
-
     pub hi: u64,
     pub lo: u64,
     pub ll: u8,
-    pub pc: u64,
-
-    /* last executed instruction for debugging */
-    pub last: u32
-}
-
-impl MIPS64 for VR4300 {
-    fn rgpr(&self, reg: usize) -> u64 {
-        self.gpr[reg]
-    }
-
-    fn wgpr(&mut self, val: u64, reg: usize) {
-        match reg {
-            0 => {
-
-            }, _ => {
-                self.gpr[reg] = val;
-            },
-        }
-    }
 }
 
 impl VR4300 {
 
     pub fn new(pc: u64) -> VR4300 {
         VR4300 {
+
+            pipeline: Pipeline::new(pc),
+
             cp0: CP0::new(),
             cp1: CP1::new(),
-
-            gpr: [0; GPR_SIZE],
 
             hi: 0,
             lo: 0,
             ll: 0,
-            pc: pc,
-
-            last: 0
         }
     }
 
-    pub fn exec(&mut self, i: Inst, mc: &mut MC) {
-
-        match i.class() {
-
-            OpC::I => {
-
-                let rs = i.rs(self);
-                let imm = i.imm();
-                let rt = i.function()(&i, self);
-                i.wrt(self, rt)
-
-            }, OpC::L => {
-
-                let base = i.rs(self) as i64;
-                let offset = i.offset() as i16 as i64;
-                let val = mc.read((base + offset) as u32) as u64;
-                let rt = i.function()(&i, self);
-                i.wrt(self, rt)
-
-            }, OpC::S => {
-
-                let base = i.rs(self) as i64;
-                let offset = i.offset() as i16 as i64;
-                let rt = i.rt(self);
-                let val = i.function()(&i, self) as u32;
-                mc.write((base + offset) as u32, val);
-
-            }, OpC::J => {
-
-                match i.op() {
-
-                    Op::J => {
-
-                        let target = i.target();
-                        /* sub 4 here because we will inc the pc by 4 later */
-                        self.pc = target - 4;
-
-                    }, Op::Jal => {
-
-                        let target = i.target();
-                        let pc = self.pc;
-                        self.wgpr(pc, 31);
-                        /* sub 4 here because we will inc the pc by 4 later */
-                        self.pc = target - 4;
-
-                    }, Op::Jr => {
-
-                        let target = i.rs(self);
-                        /* sub 4 here because we will inc the pc by 4 later */
-                        self.pc = target - 4;
-
-                    }, Op::Jalr => {
-
-                        let target = i.rs(self);
-                        let pc = self.pc;
-                        i.wrd(self, pc);
-                        /* sub 4 here because we will inc the pc by 4 later */
-                        self.pc = target - 4;
-
-                    }, _ => {
-                        panic!("Not a jump instruction.");
-                    }
-
-                }
-
-            }, OpC::B => {
-
-                let rs = i.rs(self);
-                let rt = i.rt(self);
-                let offset = ((i.offset() as i16 as i32) << 2) as i64;
-
-                let should_branch = i.function()(&i, self);
-                if should_branch > 0 {
-                    self.pc = (self.pc as i64 + offset) as u64;
-                }
-
-            }, OpC::R => {
-
-                let rs = i.rs(self);
-                let rt = i.rt(self);
-                let rd = i.function()(&i, self);
-                self.wgpr(rd, i._rd())
-
-            }, OpC::C => {
-
-                match i.kind() {
-
-                    Op::Cop0 => {
-                        self.cp0.exec(i);
-                    }, Op::Cop1 => {
-                        self.cp1.exec(i);
-                    }, Op::Cop2 => {
-                        panic!("Attempt to perfrom a coprocessor instruction on an invalid coprocessor.");
-                    }, Op::Reserved => {
-                        panic!("Attempt made to execute a reserved instruction {:#x}.", i.opcode());
-                    }, _ => {
-                        panic!("Not a coprocessor instruction.");
-                    }
-
-                }
-
-            }
-        }
+    pub fn exec(&mut self, mc: &mut MC) {
+        self.pipeline.ic(mc);
+        self.pipeline.rf();
+        self.pipeline.ex();
+        self.pipeline.dc(mc);
+        self.pipeline.wb(mc);
 
     }
 
     pub fn cycle(&mut self, mc: &mut MC) {
-
-        let op = mc.read(self.pc as u32);
-
-        let i = Inst(op);
-
-        /* quick way to store the last instruction */
-        self.last = op;
-
-        println!("{:#x}: ({:#x}) {}", self.pc, i.0, i);
-
-        self.exec(i, mc);
-
-        self.pc += 4;
-
+        self.exec(mc);
     }
 }
 
-pub fn print_last(cpu: &mut VR4300) {
-
-    let i = Inst(cpu.last);
-
-    println!("{}", i);
-    println!("{:02} ({}): {:#018X} ", i._rd(), GPR_NAMES[i._rd()], i.rd(cpu));
-    println!("{:02} ({}): {:#018X} ", i._rt(), GPR_NAMES[i._rt()], i.rt(cpu));
-    println!("{:02} ({}): {:#018X} ", i._rs(), GPR_NAMES[i._rs()], i.rs(cpu));
-}
-
-impl fmt::Debug for &mut VR4300 {
+impl fmt::Debug for VR4300 {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
@@ -240,10 +97,10 @@ impl fmt::Debug for &mut VR4300 {
                 try!(writeln!(f, ""))
             }
 
-            try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
+            try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.pipeline.gpr[r]))
         }
 
-        try!(writeln!(f, ""));
+        // try!(writeln!(f, ""));
 
         // for r in 0..GPR_SIZE {
         //     if (r % REGS_PER_LINE) == 0 {
@@ -251,16 +108,6 @@ impl fmt::Debug for &mut VR4300 {
         //     }
         //
         //     try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
-        // }
-
-        try!(write!(f, "\n\nVR4300 Floating Point Registers:"));
-
-        // for r in 0..GPR_SIZE {
-        //     if (r % REGS_PER_LINE) == 0 {
-        //         try!(writeln!(f, ""))
-        //     }
-        //
-        //     try!(write!(f, "fpr{:02}: {:21} ", r, self.rfpr(r)))
         // }
 
         Ok(())

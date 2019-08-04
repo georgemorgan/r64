@@ -1,4 +1,4 @@
-/* op.i.rs(cpu) - Exposes all of the possible VR4300i opcodes and their implementations. */
+/* op.p.rs - Exposes all of the possible VR4300i opcodes and their implementations. */
 
 #[derive(Copy, Clone)]
 pub enum OpC {
@@ -51,14 +51,14 @@ pub enum Op {
     Bltzal,     Bgezal,     Bltzall,    Bgezall,    /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
-    /* COPz i.rs(cpu) opcodes. */
+    /* COPz p.rs opcodes. */
 
     Mf,            Dmf,        Cf,            /**/        Mt,            Dmt,        Ct,            /**/
     Bc,            /**/        /**/        /**/        /**/        /**/        /**/        /**/
     Co,            /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
     /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
 
-    /* COPz i.rt(cpu) opcodes. */
+    /* COPz p.rt opcodes. */
 
     Bcf,        Bct,        Bcfl,        Bctl,        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
@@ -79,153 +79,153 @@ pub enum Op {
     Reserved
 }
 
-use n64::vr4300::*;
+use super::*;
 
-pub type OpF = &'static Fn(&Inst, &mut VR4300) -> u64;
+pub type OpF = &'static Fn(&mut Pipeline);
 
 pub type OpTup = (Op, &'static str, OpC, OpF);
 
-const RESERVED: OpTup = (Op::Reserved, "reserved", OpC::R, &|i, cpu| {
+const RESERVED: OpTup = (Op::Reserved, "reserved", OpC::R, &|p| {
     unimplemented!()
 });
 
-/* A constant 2-d array of the opcode values. */
+/* A constant 2-d array of the opcode p.dcues. */
 
 pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
 
-    [&(Op::Special, "special", OpC::R, &|i, cpu| {
+    [&(Op::Special, "special", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::RegImm, "regimm", OpC::I, &|i, cpu| {
+    &(Op::RegImm, "regimm", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::J, "j", OpC::J, &|i, cpu| {
+    &(Op::J, "j", OpC::J, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Jal, "jal", OpC::J, &|i, cpu| {
+    &(Op::Jal, "jal", OpC::J, &|p| {
         unimplemented!()
     }),
 
-    // Branches to the branch address if register i.rs(cpu) equals to i.rt(cpu).
-    &(Op::Beq, "beq", OpC::B, &|i, cpu| {
-        if i.rt(cpu) == i.rs(cpu) { 1 } else { 0 }
+    // Branches to the branch address if register p.rs equals to p.rt.
+    &(Op::Beq, "beq", OpC::B, &|p| {
+        p.br = if p.rt == p.rs { true } else { false }
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is not equal to i.rt(cpu).
-    &(Op::Bne, "bne", OpC::B, &|i, cpu| {
-        if i.rt(cpu) != i.rs(cpu) { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is not equal to p.rt.
+    &(Op::Bne, "bne", OpC::B, &|p| {
+        p.br = if p.rt != p.rs { true } else { false }
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is less than 0.
-    &(Op::Blez, "blez", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) < 0 { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is less than 0.
+    &(Op::Blez, "blez", OpC::B, &|p| {
+        p.br = if (p.rs as i64) < 0 { true } else { false }
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is greater than 0.
-    &(Op::Bgtz, "bgtz", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) > 0 { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is greater than 0.
+    &(Op::Bgtz, "bgtz", OpC::B, &|p| {
+        p.br = if (p.rs as i64) > 0 { true } else { false }
     })],
 
     /* ROW: 1 */
 
-    // Sign-extends the 16-bit immediate and adds it to register i.rs(cpu). Stores the 32-bit result to register i.rt(cpu) (sign-extends the result in the 64-bit mode).
-    // Generates an exception if a 2's complement integer overflow occui.rs(cpu).
-    [&(Op::Addi, "addi", OpC::I, &|i, cpu| {
-        (i.rs(cpu) as i64 + i.imm() as i16 as i64) as u64
+    // Sign-extends the 16-bit immediate and adds it to register p.rs. Stores the 32-bit result to register p.rt (sign-extends the result in the 64-bit mode).
+    // Generates an exception if a 2's complement integer overflow occup.rs.
+    [&(Op::Addi, "addi", OpC::I, &|p| {
+        p.ol = (p.rs as i64 + p.op.imm() as i16 as i64) as u64
     }),
 
-    // Sign-extends the 16-bit immediate and adds it to register i.rs(cpu). Stores the 32-bit result to register i.rt(cpu) (sign-extends the result in the 64-bit mode).
-    // Does not generate an exception even if an integer overflow occui.rs(cpu).
-    &(Op::Addiu, "addiu", OpC::I, &|i, cpu| {
-        (i.rs(cpu) as i64 + i.imm() as i16 as i64) as u64
+    // Sign-extends the 16-bit immediate and adds it to register p.rs. Stores the 32-bit result to register p.rt (sign-extends the result in the 64-bit mode).
+    // Does not generate an exception even if an integer overflow occup.rs.
+    &(Op::Addiu, "addiu", OpC::I, &|p| {
+        p.ol = (p.rs as i64 + p.op.imm() as i16 as i64) as u64
     }),
 
-    // Sign-extends the 16-bit immediate and compares it with register i.rs(cpu) as a signed integer. If i.rs(cpu) is less than the immediate, stores 1 to register i.rt(cpu); otherwise, stores 0 to register i.rt(cpu).
-    &(Op::Slti, "slti", OpC::I, &|i, cpu| {
-        if (i.rs(cpu) as i64) < i.imm() as i16 as i64 { 1 } else { 0 }
+    // Sign-extends the 16-bit immediate and compares it with register p.rs as a signed integer. If p.rs is less than the immediate, stores 1 to register p.rt; otherwise, stores 0 to register p.rt.
+    &(Op::Slti, "slti", OpC::I, &|p| {
+        p.ol = if (p.rs as i64) < p.op.imm() as i16 as i64 { 1 } else { 0 }
     }),
 
-    // Sign-extends the 16-bit immediate and compares it with register i.rs(cpu) as an unsigned integer. If i.rs(cpu) is less than the immediate, stores 1 to register i.rt(cpu); otherwise, stores 0 to register i.rt(cpu).
-    &(Op::Sltiu, "sltiu", OpC::I, &|i, cpu| {
-        if (i.rs(cpu) as u64) < i.imm() as i16 as i64 as u64 { 1 } else { 0 }
+    // Sign-extends the 16-bit immediate and compares it with register p.rs as an unsigned integer. If p.rs is less than the immediate, stores 1 to register p.rt; otherwise, stores 0 to register p.rt.
+    &(Op::Sltiu, "sltiu", OpC::I, &|p| {
+        p.ol = if (p.rs as u64) < p.op.imm() as i16 as i64 as u64 { 1 } else { 0 }
     }),
 
-    // Zero-extends the 16-bit immediate, ANDs it with register i.rs(cpu), and stores the result to register i.rt(cpu).
-    &(Op::Andi, "andi", OpC::I, &|i, cpu| {
-        (i.rs(cpu) as u64) & (i.imm() as u64)
+    // Zero-extends the 16-bit immediate, ANDs it with register p.rs, and stores the result to register p.rt.
+    &(Op::Andi, "andi", OpC::I, &|p| {
+        p.ol = (p.rs as u64) & (p.op.imm() as u64)
     }),
 
-    // Zero-extends the 16-bit immediate, ORs it with register i.rs(cpu), and stores the result to register i.rt(cpu).
-    &(Op::Ori, "ori", OpC::I, &|i, cpu| {
-        (i.rs(cpu) as u64) | (i.imm() as u64)
+    // Zero-extends the 16-bit immediate, ORs it with register p.rs, and stores the result to register p.rt.
+    &(Op::Ori, "ori", OpC::I, &|p| {
+        p.ol = (p.rs as u64) | (p.op.imm() as u64)
     }),
 
-    // Zero-extends the 16-bit immediate, exclusive-ORs it with register i.rs(cpu), and stores the result to register i.rt(cpu).
-    &(Op::Xori, "xori", OpC::I, &|i, cpu| {
-        (i.rs(cpu) as u64) ^ (i.imm() as u64)
+    // Zero-extends the 16-bit immediate, exclusive-ORs it with register p.rs, and stores the result to register p.rt.
+    &(Op::Xori, "xori", OpC::I, &|p| {
+        p.ol = (p.rs as u64) ^ (p.op.imm() as u64)
     }),
 
-    // Shifts the 16-bit immediate 16 bits to the left, and cleai.rs(cpu) the low-order 16 bits of the word to 0.
-    // Stores the result to register i.rt(cpu) (by sign-extending the result in the 64-bit mode).
-    &(Op::Lui, "lui", OpC::I, &|i, cpu| {
-        (((i.imm() as u32) << 16) & !0xFFFF) as i32 as i64 as u64
+    // Shifts the 16-bit immediate 16 bits to the left, and cleap.rs the low-order 16 bits of the word to 0.
+    // Stores the result to register p.rt (by sign-extending the result in the 64-bit mode).
+    &(Op::Lui, "lui", OpC::I, &|p| {
+        p.ol = (((p.op.imm() as u32) << 16) & !0xFFFF) as i32 as i64 as u64
     })],
 
     /* ROW: 2 */
 
-    [&(Op::Cop0, "cop0", OpC::C, &|i, cpu| {
+    [&(Op::Cop0, "cop0", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Cop1, "cop1", OpC::C, &|i, cpu| {
+    &(Op::Cop1, "cop1", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Cop2, "cop2", OpC::C, &|i, cpu| {
+    &(Op::Cop2, "cop2", OpC::C, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    // Branches to the branch address if registers i.rs(cpu) and i.rt(cpu) are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Beql, "beql", OpC::B, &|i, cpu| {
-        if i.rt(cpu) == i.rs(cpu) { 1 } else { 0 }
+    // Branches to the branch address if registers p.rs and p.rt are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    &(Op::Beql, "beql", OpC::B, &|p| {
+        p.br = if p.rt == p.rs { true } else { false }
     }),
 
-    // Branches to the branch address if registers i.rs(cpu) and i.rt(cpu) are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Bnel, "bnel", OpC::B, &|i, cpu| {
-        if i.rt(cpu) != i.rs(cpu) { 1 } else { 0 }
+    // Branches to the branch address if registers p.rs and p.rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    &(Op::Bnel, "bnel", OpC::B, &|p| {
+        p.br = if p.rt != p.rs { true } else { false }
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Blezl, "blezl", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) < 0 { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    &(Op::Blezl, "blezl", OpC::B, &|p| {
+        p.br = if (p.rs as i64) < 0 { true } else { false }
     }),
 
-    &(Op::Bgtzl, "bgtzl", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) > 0 { 1 } else { 0 }
+    &(Op::Bgtzl, "bgtzl", OpC::B, &|p| {
+        p.br = if (p.rs as i64) > 0 { true } else { false }
     })],
 
     /* ROW: 3 */
 
-    [&(Op::Daddi, "daddi", OpC::I, &|i, cpu| {
+    [&(Op::Daddi, "daddi", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Daddiu, "daddiu", OpC::I, &|i, cpu| {
+    &(Op::Daddiu, "daddiu", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ldl, "ldl", OpC::L, &|i, cpu| {
+    &(Op::Ldl, "ldl", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ldr, "ldr", OpC::L, &|i, cpu| {
+    &(Op::Ldr, "ldr", OpC::L, &|p| {
         unimplemented!()
     }),
 
@@ -236,270 +236,289 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 4 */
 
-    [&(Op::Lb, "lb", OpC::L, &|i, cpu| {
-        let val = 0;
-        (val & 0xff) as i8 as i64 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Sign-extends the contents of a byte specified by the address and loads the result to register rt.
+    [&(Op::Lb, "lb", OpC::L, &|p| {
+        p.ol  = (p.dc & 0xff) as i8 as i64 as u64
     }),
 
-    &(Op::Lh, "lh", OpC::L, &|i, cpu| {
-        let val = 0;
-        (val & 0xffff) as i16 as i64 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Sign-extends the contents of a halfword specified by the address and loads the result to register rt.
+    &(Op::Lh, "lh", OpC::L, &|p| {
+        p.ol  = (p.dc & 0xffff) as i16 as i64 as u64
      }),
 
-    &(Op::Lwl, "lwl", OpC::L, &|i, cpu| {
-        let val = 0;
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Shifts a word specified by the address to the left, so that a byte specified by the address is at the leftmost position of the word. Sign-extends (in the 64bit mode), merges the result of the shift and the contents of register rt, and loads the result to register rt.
+    &(Op::Lwl, "lwl", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Lw, "lw", OpC::L, &|i, cpu| {
-        let val = 0;
-        val as i32 as i64 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Sign-extends the contents of a word specified by the address (in the 64-bit mode) and loads the result to register rt.
+    &(Op::Lw, "lw", OpC::L, &|p| {
+        p.ol  = p.dc as i32 as i64 as u64
     }),
 
-    &(Op::Lbu, "lbu", OpC::L, &|i, cpu| {
-        let val = 0;
-        (val & 0xff) as u8 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Zero-extends the contents of a byte specified by the address and loads the result to register rt.
+    &(Op::Lbu, "lbu", OpC::L, &|p| {
+        p.ol  = (p.dc & 0xff) as u8 as u64
     }),
 
-    &(Op::Lhu, "lhu", OpC::L, &|i, cpu| {
-        let val = 0;
-        (val & 0xffff) as u16 as u64
+    //Generates an address by adding a sign-extended offset to the contents of register base.
+    // Zero-extends the contents of a halfword specified by the address and loads the result to register rt.
+    &(Op::Lhu, "lhu", OpC::L, &|p| {
+        p.ol  = (p.dc & 0xffff) as u16 as u64
     }),
 
-    &(Op::Lwr, "lwr", OpC::L, &|i, cpu| {
-        let val = 0;
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Shifts a word specified by the address to the right, so that a byte specified by the address is at the rightmost position of the word.
+    // Sign-extends (in the 64bit mode), merges the result of the shift and the contents of register rt, and loads the result to register rt.
+    &(Op::Lwr, "lwr", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Lwu, "lwu", OpC::L, &|i, cpu| {
-        let val = 0;
-        val as u32 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Zero-extends the contents of the word specified by the address, and loads the result to register rt.
+    &(Op::Lwu, "lwu", OpC::L, &|p| {
+        p.ol  = p.dc as u32 as u64
     })],
 
     /* ROW: 5 */
 
-    [&(Op::Sb, "sb", OpC::S, &|i, cpu| {
-        (i.rt(cpu) & 0xff) as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Stores the contents of the low-order byte of register rt to the memory specified by the address.
+    [&(Op::Sb, "sb", OpC::S, &|p| {
+        p.ol = (p.rt & 0xff) as u64
     }),
 
-    &(Op::Sh, "sh", OpC::S, &|i, cpu| {
-        (i.rt(cpu) & 0xffff) as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Stores the contents of the low-order halfword of register rt to the memory specified by the address.
+    &(Op::Sh, "sh", OpC::S, &|p| {
+        p.ol = (p.rt & 0xffff) as u64
     }),
 
-    &(Op::Swl, "swl", OpC::S, &|i, cpu| {
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Shifts the contents of register rt to the right so that the leftmost byte of the word is at the position of the byte specified by the address.
+    // Stores the result of the shift to the lower portion of the word in memory.
+    &(Op::Swl, "swl", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sw, "sw", OpC::S, &|i, cpu| {
-        i.rt(cpu) as u32 as u64
+    // Generates an address by adding a sign-extended offset to the contents of register base.
+    // Stores the contents of the low-order word of register rt to the memory specified by the address.
+    &(Op::Sw, "sw", OpC::S, &|p| {
+        p.ol = p.rt as u32 as u64
     }),
 
-    &(Op::Sdl, "sdl", OpC::S, &|i, cpu| {
+    &(Op::Sdl, "sdl", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sdr, "sdr", OpC::S, &|i, cpu| {
+    &(Op::Sdr, "sdr", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Swr, "swr", OpC::S, &|i, cpu| {
+    &(Op::Swr, "swr", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Cache, "cache", OpC::I, &|i, cpu| {
+    &(Op::Cache, "cache", OpC::I, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 6 */
 
-    [&(Op::Ll, "ll", OpC::L, &|i, cpu| {
+    [&(Op::Ll, "ll", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Lwc1, "lwc1", OpC::L, &|i, cpu| {
+    &(Op::Lwc1, "lwc1", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Lwc2, "lwc2", OpC::L, &|i, cpu| {
+    &(Op::Lwc2, "lwc2", OpC::L, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Lld, "lld", OpC::L, &|i, cpu| {
+    &(Op::Lld, "lld", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ldc1, "ldc1", OpC::L, &|i, cpu| {
+    &(Op::Ldc1, "ldc1", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ldc2, "ldc2", OpC::L, &|i, cpu| {
+    &(Op::Ldc2, "ldc2", OpC::L, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ld, "ld", OpC::L, &|i, cpu| {
+    &(Op::Ld, "ld", OpC::L, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 7 */
 
-    [&(Op::Sc, "sc", OpC::S, &|i, cpu| {
+    [&(Op::Sc, "sc", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Swc1, "swc1", OpC::S, &|i, cpu| {
+    &(Op::Swc1, "swc1", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Swc2, "swc2", OpC::S, &|i, cpu| {
+    &(Op::Swc2, "swc2", OpC::S, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Scd, "scd", OpC::S, &|i, cpu| {
+    &(Op::Scd, "scd", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sdc1, "sdc1", OpC::S, &|i, cpu| {
+    &(Op::Sdc1, "sdc1", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sdc2, "sdc2", OpC::S, &|i, cpu| {
+    &(Op::Sdc2, "sdc2", OpC::S, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sd, "sd", OpC::S, &|i, cpu| 0)],
+    &(Op::Sd, "sd", OpC::S, &|p| {
+        unimplemented!()
+    })],
 ];
 
-/* A constant 2-d array of the opcode values. */
+/* A constant 2-d array of the opcode p.dcues. */
 pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
 
-    [&(Op::Sll, "sll", OpC::R, &|i, cpu| {
+    [&(Op::Sll, "sll", OpC::R, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Srl, "srl", OpC::R, &|i, cpu| {
+    &(Op::Srl, "srl", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sra, "sra", OpC::R, &|i, cpu| {
+    &(Op::Sra, "sra", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sllv, "sllv", OpC::R, &|i, cpu| {
+    &(Op::Sllv, "sllv", OpC::R, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Srlv, "srlv", OpC::R, &|i, cpu| {
+    &(Op::Srlv, "srlv", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Srav, "srav", OpC::R, &|i, cpu| {
+    &(Op::Srav, "srav", OpC::R, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 1 */
 
-    [&(Op::Jr, "jr", OpC::J, &|i, cpu| {
+    [&(Op::Jr, "jr", OpC::J, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Jalr, "jalr", OpC::J, &|i, cpu| {
-        unimplemented!()
-    }),
-
-    &RESERVED,
-    &RESERVED,
-
-    &(Op::Syscall, "syscall", OpC::R, &|i, cpu| {
-        let result = if i.rt(cpu) == 16 { "Pass" }  else { "Fail" };
-        println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", i.rs(cpu), i.rd(cpu), i.sa(), result);
-        0
-    }),
-
-    &(Op::Brk, "brk", OpC::R, &|i, cpu| {
+    &(Op::Jalr, "jalr", OpC::J, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
+    &RESERVED,
 
-    &(Op::Sync, "sync", OpC::R, &|i, cpu| {
+    &(Op::Syscall, "syscall", OpC::R, &|p| {
+        let result = if p.rt == 16 { "Pass" }  else { "Fail" };
+        println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", p.rs, 0, p.op.sa(), result);
+    }),
+
+    &(Op::Brk, "brk", OpC::R, &|p| {
+        unimplemented!()
+    }),
+
+    &RESERVED,
+
+    &(Op::Sync, "sync", OpC::R, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 2 */
 
-    [&(Op::Mfhi, "mfhi", OpC::R, &|i, cpu| {
+    [&(Op::Mfhi, "mfhi", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Mthi, "mthi", OpC::R, &|i, cpu| {
+    &(Op::Mthi, "mthi", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Mflo, "mflo", OpC::R, &|i, cpu| {
+    &(Op::Mflo, "mflo", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Mtlo, "mtlo", OpC::R, &|i, cpu| {
+    &(Op::Mtlo, "mtlo", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsllv, "dsllv", OpC::R, &|i, cpu| {
+    &(Op::Dsllv, "dsllv", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Reserved, "resered", OpC::R, &|i, cpu| {
+    &(Op::Reserved, "resered", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsrlv, "dsrlv", OpC::R, &|i, cpu| {
+    &(Op::Dsrlv, "dsrlv", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsrav, "dsrav", OpC::R, &|i, cpu| {
+    &(Op::Dsrav, "dsrav", OpC::R, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 3 */
 
-    [&(Op::Mult, "mult", OpC::R, &|i, cpu| {
+    [&(Op::Mult, "mult", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Multu, "multu", OpC::R, &|i, cpu| {
+    &(Op::Multu, "multu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Div, "div", OpC::R, &|i, cpu| {
+    &(Op::Div, "div", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Divu, "divu", OpC::R, &|i, cpu| {
+    &(Op::Divu, "divu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dmult, "dmult", OpC::R, &|i, cpu| {
+    &(Op::Dmult, "dmult", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dmultu, "dmultu", OpC::R, &|i, cpu| {
+    &(Op::Dmultu, "dmultu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ddiv, "ddiv", OpC::R, &|i, cpu| {
+    &(Op::Ddiv, "ddiv", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ddivu    , "ddivu", OpC::R, &|i, cpu| {
+    &(Op::Ddivu    , "ddivu", OpC::R, &|p| {
         unimplemented!()
     })],
 
@@ -507,35 +526,35 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // Adds the contents of register rs and rt, and stores (sign-extends in the 64-bit mode) the 32-bit result to register rd.
     // Generates an exception if an integer overflow occurs.
-    [&(Op::Add, "add", OpC::R, &|i, cpu| {
-        i.rs(cpu) + i.rt(cpu)
+    [&(Op::Add, "add", OpC::R, &|p| {
+        p.ol = p.rs + p.rt
     }),
 
-    &(Op::Addu, "addu", OpC::R, &|i, cpu| {
+    &(Op::Addu, "addu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sub, "sub", OpC::R, &|i, cpu| {
+    &(Op::Sub, "sub", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Subu, "subu", OpC::R, &|i, cpu| {
+    &(Op::Subu, "subu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::And, "and", OpC::R, &|i, cpu| {
+    &(Op::And, "and", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Or, "or", OpC::R, &|i, cpu| {
+    &(Op::Or, "or", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Xor, "xor", OpC::R, &|i, cpu| {
+    &(Op::Xor, "xor", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Nor, "nor", OpC::R, &|i, cpu| {
+    &(Op::Nor, "nor", OpC::R, &|p| {
         unimplemented!()
     })],
 
@@ -545,55 +564,55 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     &RESERVED,
 
-    &(Op::Slt, "slt", OpC::R, &|i, cpu| {
+    &(Op::Slt, "slt", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Sltu, "sltu", OpC::R, &|i, cpu| {
+    &(Op::Sltu, "sltu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dadd, "dadd", OpC::R, &|i, cpu| {
+    &(Op::Dadd, "dadd", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Daddu, "daddu", OpC::R, &|i, cpu| {
+    &(Op::Daddu, "daddu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsub, "dsub", OpC::R, &|i, cpu| {
+    &(Op::Dsub, "dsub", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsubu, "dsubu", OpC::R, &|i, cpu| {
+    &(Op::Dsubu, "dsubu", OpC::R, &|p| {
         unimplemented!()
     })],
 
     /* ROW: 6 */
 
-    [&(Op::Tge, "tge", OpC::R, &|i, cpu| {
+    [&(Op::Tge, "tge", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tgeu, "tgeu", OpC::R, &|i, cpu| {
+    &(Op::Tgeu, "tgeu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tlt, "tlt", OpC::R, &|i, cpu| {
+    &(Op::Tlt, "tlt", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tltu, "tltu", OpC::R, &|i, cpu| {
+    &(Op::Tltu, "tltu", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Teq, "teq", OpC::R, &|i, cpu| {
+    &(Op::Teq, "teq", OpC::R, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Tne, "tne", OpC::R, &|i, cpu| {
+    &(Op::Tne, "tne", OpC::R, &|p| {
         unimplemented!()
     }),
 
@@ -601,56 +620,56 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 7 */
 
-    [&(Op::Dsll, "dsll", OpC::R, &|i, cpu| {
+    [&(Op::Dsll, "dsll", OpC::R, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Dsrl, "dsrl", OpC::R, &|i, cpu| {
+    &(Op::Dsrl, "dsrl", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsra, "dsra", OpC::R, &|i, cpu| {
+    &(Op::Dsra, "dsra", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsll32, "dsll32", OpC::R, &|i, cpu| {
+    &(Op::Dsll32, "dsll32", OpC::R, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Dsrl32, "dsrl32", OpC::R, &|i, cpu| {
+    &(Op::Dsrl32, "dsrl32", OpC::R, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dsra32, "dsra32", OpC::R, &|i, cpu| {
+    &(Op::Dsra32, "dsra32", OpC::R, &|p| {
         unimplemented!()
     })],
 ];
 
-/* A constant 2-d array of the opcode values. , _*/
+/* A constant 2-d array of the opcode p.dcues. , _*/
 pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Bltz, "bltz", OpC::B, &|i, cpu| {
+    [&(Op::Bltz, "bltz", OpC::B, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bgez, "bgez", OpC::B, &|i, cpu| {
+    &(Op::Bgez, "bgez", OpC::B, &|p| {
         unimplemented!()
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Bltzl, "bltzl", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) < 0 { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    &(Op::Bltzl, "bltzl", OpC::B, &|p| {
+        p.br = if (p.rs as i64) < 0 { true } else { false }
     }),
 
-    // Branches to the branch address if register i.rs(cpu) is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
-    &(Op::Bgezl, "bgezl", OpC::B, &|i, cpu| {
-        if (i.rs(cpu) as i64) > 0 { 1 } else { 0 }
+    // Branches to the branch address if register p.rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    &(Op::Bgezl, "bgezl", OpC::B, &|p| {
+        p.br = if (p.rs as i64) > 0 { true } else { false }
     }),
 
     &RESERVED,
@@ -660,29 +679,29 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 1 */
 
-    [&(Op::Tgei, "tgei", OpC::I, &|i, cpu| {
+    [&(Op::Tgei, "tgei", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tgeiu, "tgeiu", OpC::I, &|i, cpu| {
+    &(Op::Tgeiu, "tgeiu", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tlti, "tlti", OpC::I, &|i, cpu| {
+    &(Op::Tlti, "tlti", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tltiu, "tltiu", OpC::I, &|i, cpu| {
+    &(Op::Tltiu, "tltiu", OpC::I, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Teqi, "teqi", OpC::I, &|i, cpu| {
+    &(Op::Teqi, "teqi", OpC::I, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Tnei, "tnei", OpC::I, &|i, cpu| {
+    &(Op::Tnei, "tnei", OpC::I, &|p| {
         unimplemented!()
     }),
 
@@ -690,19 +709,19 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 2 */
 
-    [&(Op::Bltzal, "bltzal", OpC::B, &|i, cpu| {
+    [&(Op::Bltzal, "bltzal", OpC::B, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bgezal, "bgezal", OpC::B, &|i, cpu| {
+    &(Op::Bgezal, "bgezal", OpC::B, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bltzall, "bltzall", OpC::B, &|i, cpu| {
+    &(Op::Bltzall, "bltzall", OpC::B, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bgezall, "bgezall", OpC::B, &|i, cpu| {
+    &(Op::Bgezall, "bgezall", OpC::B, &|p| {
         unimplemented!()
     }),
 
@@ -723,34 +742,34 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode values. */
+/* A constant 2-d array of the opcode p.dcues. */
 pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Mf, "mf", OpC::C, &|i, cpu| {
+    [&(Op::Mf, "mf", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dmf, "dmf", OpC::C, &|i, cpu| {
+    &(Op::Dmf, "dmf", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Cf, "cf", OpC::C, &|i, cpu| {
+    &(Op::Cf, "cf", OpC::C, &|p| {
         unimplemented!()
     }),
 
     &RESERVED,
 
-    &(Op::Mt, "mt", OpC::C, &|i, cpu| {
+    &(Op::Mt, "mt", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Dmt, "dmt", OpC::C, &|i, cpu| {
+    &(Op::Dmt, "dmt", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Ct, "ct", OpC::C, &|i, cpu| {
+    &(Op::Ct, "ct", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -758,7 +777,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 4 */
 
-    [&(Op::Bc, "bc", OpC::C, &|i, cpu| {
+    [&(Op::Bc, "bc", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -772,7 +791,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 5 */
 
-    [&(Op::Co, "co", OpC::C, &|i, cpu| {
+    [&(Op::Co, "co", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -796,24 +815,24 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode values. */
+/* A constant 2-d array of the opcode p.dcues. */
 pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
-    [&(Op::Bcf, "bcf", OpC::C, &|i, cpu| {
+    [&(Op::Bcf, "bcf", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bct, "bct", OpC::C, &|i, cpu| {
+    &(Op::Bct, "bct", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bcfl, "bcfl", OpC::C, &|i, cpu| {
+    &(Op::Bcfl, "bcfl", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Bctl, "bctl", OpC::C, &|i, cpu| {
+    &(Op::Bctl, "bctl", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -856,18 +875,18 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode values. */
+/* A constant 2-d array of the opcode p.dcues. */
 pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
     [&RESERVED,
 
-    &(Op::Tlbr, "tlbr", OpC::C, &|i, cpu| {
+    &(Op::Tlbr, "tlbr", OpC::C, &|p| {
         unimplemented!()
     }),
 
-    &(Op::Tlbwi, "tlbwi", OpC::C, &|i, cpu| {
+    &(Op::Tlbwi, "tlbwi", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -875,7 +894,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED,
     &RESERVED,
 
-    &(Op::Tlbwr, "tlbwr", OpC::C, &|i, cpu| {
+    &(Op::Tlbwr, "tlbwr", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -883,7 +902,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 1 */
 
-    [&(Op::Tlbp, "tlbp", OpC::C, &|i, cpu| {
+    [&(Op::Tlbp, "tlbp", OpC::C, &|p| {
         unimplemented!()
     }),
 
@@ -908,7 +927,7 @@ pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 3 */
 
-    [&(Op::Eret, "eret", OpC::C, &|i, cpu| {
+    [&(Op::Eret, "eret", OpC::C, &|p| {
         unimplemented!()
     }),
 

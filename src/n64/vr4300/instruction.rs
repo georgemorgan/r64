@@ -75,8 +75,8 @@ impl Inst {
         return self.op_tup().2;
     }
 
-    /* Returns the opcode's function. */
-    pub fn function(&self) -> OpF {
+    /* Returns the opcode's ex function. */
+    pub fn ex(&self) -> OpF {
         return self.op_tup().3;
     }
 
@@ -85,44 +85,14 @@ impl Inst {
         ((self.0 >> 21) & 0b11111) as usize
     }
 
-    /* Returns the value of the CPU's rs register. */
-    pub fn rs<T: MIPS64>(&self, cpu: &T) -> u64 {
-        cpu.rgpr(self._rs())
-    }
-
-    /* Writes a value to the CPU's rs register. */
-    pub fn wrs<T: MIPS64>(&self, cpu: &mut T, val: u64) {
-        cpu.wgpr(val, self._rs());
-    }
-
     /* Returns the instruction's target register. */
     pub fn _rt(&self) -> usize {
         ((self.0 >> 16) & 0b11111) as usize
     }
 
-    /* Returns the value of the CPU's rt register. */
-    pub fn rt<T: MIPS64>(&self, cpu: &T) -> u64 {
-        cpu.rgpr(self._rt())
-    }
-
-    /* Writes a value to the CPU's rt register. */
-    pub fn wrt<T: MIPS64>(&self, cpu: &mut T, val: u64) {
-        cpu.wgpr(val, self._rt());
-    }
-
     /* Returns the instruciton's destination register. */
     pub fn _rd(&self) -> usize {
         return ((self.0 >> 11) & 0b11111) as usize;
-    }
-
-    /* Returns the value of the CPU's rd register. */
-    pub fn rd<T: MIPS64>(&self, cpu: &T) -> u64 {
-        return cpu.rgpr(self._rd());
-    }
-
-    /* Writes a value to the CPU's rd register. */
-    pub fn wrd<T: MIPS64>(&self, cpu: &mut T, val: u64) {
-        cpu.wgpr(val, self._rd());
     }
 
     /* Returns the instruction's shift amount. */

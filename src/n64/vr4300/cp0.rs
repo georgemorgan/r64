@@ -33,18 +33,6 @@ pub struct CP0 {
     regs: [u32; GPR_SIZE],
 }
 
-impl MIPS64 for CP0 {
-    /* reads from a cop0 register */
-    fn rgpr(&self, reg: usize) -> u64 {
-        self.regs[reg] as u64
-    }
-
-    /* writes to a cop0 register */
-    fn wgpr(&mut self, val: u64, reg: usize) {
-        self.regs[reg] = val as u32;
-    }
-}
-
 impl CP0 {
 
     pub fn new() -> CP0 {
@@ -59,20 +47,15 @@ impl CP0 {
         match i.op() {
 
             Op::Mf => {
-                let rt = i.rt(self);
-                i.wrt(self, rt);
+                unimplemented!()
             }, Op::Dmf => {
-                let rt = i.rt(self);
-                i.wrt(self, rt);
+                unimplemented!()
             }, Op::Cf => {
                 unimplemented!()
             }, Op::Mt => {
-                let rt = i.rt(self);
-                i.wrt(self, rt);
+                unimplemented!()
             }, Op::Dmt => {
-                // Transfers the contents of the general purpose register rt of the CPU to the general purpose register rd of coprocessor z.
-                let rt = i.rt(self);
-                i.wrt(self, rt);;
+                unimplemented!()
             }, Op::Ct => {
                 unimplemented!();
             }, Op::Bcf => {

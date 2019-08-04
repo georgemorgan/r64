@@ -5,8 +5,8 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Read;
 
-// use rustyline::error::ReadlineError;
-// use rustyline::Editor;
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
 /* Use the N64 module. */
 mod n64;
@@ -58,42 +58,37 @@ fn main() {
     /* Create the N64. */
     let mut n64 = N64::new(crom, prom);
 
-    loop {
-        println!("{:?}", n64::vr4300::print_last(&mut n64.cpu));
-        n64.cycle();
-    }
-
-    // let mut rl = Editor::<()>::new();
-    // 'main_loop: loop {
-    //     let readline = rl.readline("> ");
-    //     match readline {
-    //         Ok(line) => {
-    //             rl.add_history_entry(&line);
-    //             match line.as_ref() {
-    //                 // /* Prints the CPU state. */
-    //                 "print" | "p" => {
-    //                     println!("{:?}", n64.cpu);
-    //                 },
-    //                 // /* Prints the side effects of the last instruction. */
-    //                 "last" | "l" => {
-    //                     println!("{:?}", n64::cpu::print_last(&n64.cpu));
-    //                 },
-    //                 "quit" | "q" => {
-    //                     break 'main_loop;
-    //                 },
-    //                 /* Steps into a single instruction. */
-    //                 "step" | "s" | _ => {
-    //                     n64.cycle();
-    //                 },
-    //             }
-    //         },
-    //         Err(ReadlineError::Interrupted) => {
-    //             break
-    //         },
-    //         Err(err) => {
-    //             println!("Error: {:?}", err);
-    //             break
-    //         }
-    //     }
+    // loop {
+    //     n64.cycle();
     // }
+
+    let mut rl = Editor::<()>::new();
+    'main_loop: loop {
+        let readline = rl.readline("> ");
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(&line);
+                match line.as_ref() {
+                    // /* Prints the CPU state. */
+                    "print" | "p" => {
+                        println!("{:?}", n64.cpu);
+                    },
+                    "quit" | "q" => {
+                        break 'main_loop;
+                    },
+                    /* Steps into a single instruction. */
+                    "step" | "s" | _ => {
+                        n64.cycle();
+                    },
+                }
+            },
+            Err(ReadlineError::Interrupted) => {
+                break
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break
+            }
+        }
+    }
 }
