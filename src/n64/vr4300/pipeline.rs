@@ -16,6 +16,7 @@ pub struct Pipeline {
     /* EX */
     pub ol: u64,
     pub br: bool,
+    pub wlr: bool,
 
     /* DC */
     pub dc: u64,
@@ -38,70 +39,112 @@ impl Pipeline {
 
             ol: 0,
             br: false,
+            wlr: false,
 
             dc: 0
 
         }
     }
 
-    /* IC - Instruction Cache Fetch */
-    pub fn ic(&mut self, mc: &MC) {
-        let val = mc.read(self.pc as u32);
-        self.op = Inst(val);
-        println!("{:#x}: ({:#x}) {}", self.pc, val, self.op);
-    }
+}
 
-    /* RF - Register Fetch */
-    pub fn rf(&mut self) {
-        self.pc += 4;
-        self.rt = self.gpr[self.op._rt()];
-        self.rs = self.gpr[self.op._rs()];
-    }
+/* IC - Instruction Cache Fetch */
+pub fn ic(cpu: &mut VR4300, mc: &MC) {
 
-    /* EX - Execution */
-    pub fn ex(&mut self) {
-        match self.op.class() {
-            OpC::L => {
+    let p = &mut cpu.pipeline;
 
-            }, _ => {
-                self.op.ex()(self);
-            }
+    let val = mc.read(p.pc as u32);
+    p.op = Inst(val);
+    println!("{:#x}: ({:#x}) {}", p.pc, val, p.op);
+}
+
+/* RF - Register Fetch */
+pub fn rf(cpu: &mut VR4300) {
+
+    let p = &mut cpu.pipeline;
+
+    p.pc += 4;
+
+    match p.op.class() {
+        OpC::C => {
+            p.rs = cpu.cp0.gpr[p.op._rd()] as u64
+        }, _ => {
+            p.rs = p.gpr[p.op._rs()];
         }
     }
 
-    /* DC - Data Cache Fetch */
-    pub fn dc(&mut self, mc: &mut MC) {
-        match self.op.class() {
-            OpC::L => {
-                self.dc = mc.read(self.ol as u32) as u64;
-                /* need to call the ex function as a hack to get ol populated */
-                self.op.ex()(self);
-            }, OpC::S => {
+    p.rt = p.gpr[p.op._rt()];
+}
 
-            }, _ => {
+/* EX - Execution */
+pub fn ex(cpu: &mut VR4300) {
 
+    let p = &mut cpu.pipeline;
+
+    match p.op.class() {
+        OpC::L => {
+
+        }, OpC::C => {
+
+        }, OpC::B => {
+            p.op.ex()(p);
+
+            if p.br {
+                let offset = ((p.op.offset() as i16 as i32) << 2) as i64;
+                p.pc = (p.pc as i64 + offset) as u64;
             }
+
+        }, _ => {
+            p.op.ex()(p);
+        }
+    }
+}
+
+/* DC - Data Cache Fetch */
+pub fn dc(cpu: &mut VR4300, mc: &mut MC) {
+
+    let p = &mut cpu.pipeline;
+
+    match p.op.class() {
+        OpC::L => {
+            let base = p.rs as i64;
+            let offset = p.op.offset() as i16 as i64;
+            p.dc = mc.read((base + offset) as u32) as u64;
+            /* need to call the ex function as a hack to get ol populated */
+            p.op.ex()(p);
+        }, _ => {
+
+        }
+    }
+}
+
+/* WB - Write Back */
+pub fn wb(cpu: &mut VR4300, mc: &mut MC) {
+
+    let p = &mut cpu.pipeline;
+
+    match p.op.class() {
+        OpC::S => {
+            let base = p.rs as i64;
+            let offset = p.op.offset() as i16 as i64;
+            mc.write((base + offset) as u32, p.ol as u32);
+        }, OpC::C => {
+            /* write back to rt on the coprocessor */
+            cpu.cp0.gpr[p.op._rt()] = p.ol as u32;
+        }, OpC::B => {
+            // nop
+        }  OpC::J => {
+            if p.wlr {
+                p.gpr[31] = p.pc + 8;
+            }
+            p.pc = p.ol;
+        } _ => {
+            /* write back to rt */
+            p.gpr[p.op._rt()] = p.ol;
         }
     }
 
-    /* WB - Write Back */
-    pub fn wb(&mut self, mc: &mut MC) {
-
-        match self.op.class() {
-            OpC::L => {
-                self.dc = mc.read(self.ol as u32) as u64;
-                /* need to call the ex function as a hack to get ol populated */
-                self.op.ex()(self);
-            }, OpC::S => {
-
-            }, _ => {
-                /* write back to rt */
-                self.gpr[self.op._rt()] = self.ol;
-                /* write back the program counter */
-                self.gpr[31] = self.pc;
-            }
-        }
-
-    }
+    /* write back the program counter */
+    p.gpr[31] = p.pc;
 
 }

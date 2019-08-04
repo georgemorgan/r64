@@ -30,7 +30,7 @@ use super::*;
 
 pub struct CP0 {
     /* the 32-bit cop0 general purpose registers */
-    regs: [u32; GPR_SIZE],
+    pub gpr: [u32; GPR_SIZE],
 }
 
 impl CP0 {
@@ -38,7 +38,7 @@ impl CP0 {
     pub fn new() -> CP0 {
         CP0 {
             /* zero-initialize the cop0 registers */
-            regs: [0; GPR_SIZE]
+            gpr: [0; GPR_SIZE]
         }
     }
 

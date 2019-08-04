@@ -72,12 +72,13 @@ fn main() {
                     // /* Prints the CPU state. */
                     "print" | "p" => {
                         println!("{:?}", n64.cpu);
-                    },
-                    "quit" | "q" => {
+                    }, "quit" | "q" => {
                         break 'main_loop;
-                    },
-                    /* Steps into a single instruction. */
-                    "step" | "s" | _ => {
+                    }, "go" | "g" => {
+                        loop {
+                            n64.cycle();
+                        }
+                    }, "step" | "s" | _ => {
                         n64.cycle();
                     },
                 }

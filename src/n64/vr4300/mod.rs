@@ -73,12 +73,11 @@ impl VR4300 {
     }
 
     pub fn exec(&mut self, mc: &mut MC) {
-        self.pipeline.ic(mc);
-        self.pipeline.rf();
-        self.pipeline.ex();
-        self.pipeline.dc(mc);
-        self.pipeline.wb(mc);
-
+        pipeline::ic(self, mc);
+        pipeline::rf(self);
+        pipeline::ex(self);
+        pipeline::dc(self, mc);
+        pipeline::wb(self, mc);
     }
 
     pub fn cycle(&mut self, mc: &mut MC) {
@@ -100,15 +99,15 @@ impl fmt::Debug for VR4300 {
             try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.pipeline.gpr[r]))
         }
 
-        // try!(writeln!(f, ""));
+        try!(writeln!(f, ""));
 
-        // for r in 0..GPR_SIZE {
-        //     if (r % REGS_PER_LINE) == 0 {
-        //         try!(writeln!(f, ""))
-        //     }
-        //
-        //     try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
-        // }
+        for r in 0..GPR_SIZE {
+            if (r % REGS_PER_LINE) == 0 {
+                try!(writeln!(f, ""))
+            }
+
+            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.gpr[r]))
+        }
 
         Ok(())
 

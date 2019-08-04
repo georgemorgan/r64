@@ -428,12 +428,16 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 1 */
 
+    // Jumps to the address of register rs, delayed by one instruction.
     [&(Op::Jr, "jr", OpC::J, &|p| {
-        unimplemented!()
+        p.ol = p.rs
     }),
 
+    // Jumps to the address of register rs, delayed by one instruction.
+    // Stores the address of the instruction following the delay slot to register rd.
     &(Op::Jalr, "jalr", OpC::J, &|p| {
-        unimplemented!()
+        p.ol = p.rs;
+        p.wlr = true;
     }),
 
     &RESERVED,
@@ -747,10 +751,12 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
+    // Loads the contents of the word of the general purpose register rd of CP0 to the general purpose register rt of the CPU.
     [&(Op::Mf, "mf", OpC::C, &|p| {
-        unimplemented!()
+        p.ol = p.rs
     }),
 
+    // Loads the contents of the doubleword of the general purpose register rd of CP0 to the general purpose register rt of the CPU.
     &(Op::Dmf, "dmf", OpC::C, &|p| {
         unimplemented!()
     }),
@@ -761,10 +767,12 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     &RESERVED,
 
+    // Loads the contents of the word of the general purpose register rt of the CPU to the general purpose register rd of CP0.
     &(Op::Mt, "mt", OpC::C, &|p| {
-        unimplemented!()
+        p.ol = p.rt
     }),
 
+    // Loads the contents of the doubleword of the general purpose register rt of the CPU to the general purpose register rd of CP0.
     &(Op::Dmt, "dmt", OpC::C, &|p| {
         unimplemented!()
     }),
