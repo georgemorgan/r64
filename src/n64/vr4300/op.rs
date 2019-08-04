@@ -415,8 +415,10 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     &RESERVED,
 
+    // Shifts the contents of register rt sa bits to the right, and inserts 0 to the highorder bits.
+    // Sign-extends (in the 64-bit mode) the 32-bit result and stores it to register rd.
     &(Op::Srl, "srl", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = (p.rt as u32 >> p.op.sa()) as i32 as i64 as u64
     }),
 
     &(Op::Sra, "sra", OpC::R, &|p| {
@@ -559,20 +561,24 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
         unimplemented!()
     }),
 
+    // ANDs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::And, "and", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = p.rs & p.rt
     }),
 
+    // ORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Or, "or", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = p.rs | p.rt
     }),
 
+    // Exclusive-ORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Xor, "xor", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = p.rs ^ p.rt
     }),
 
+    // NORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Nor, "nor", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = !(p.rs | p.rt)
     })],
 
     /* ROW: 5 */

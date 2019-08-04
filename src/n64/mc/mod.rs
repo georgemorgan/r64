@@ -220,7 +220,7 @@ impl MC {
             }, PIF_RAM_START ... PIF_RAM_END => {
                 rmem(paddr - PIF_RAM_START, &self.pif.pram)
             }, RESERVED_START ... RESERVED_END => {
-                panic!("Attempt to read from a reserved location {:#x}.", paddr)
+                panic!("Attempt to read from a reserved location address: {:#x}.", paddr)
             }, CART_DOM1_A3_START ... CART_DOM1_A3_END => {
                 rmem(paddr - CART_DOM1_A3_START, &self.crom)
             }, SYSAD_START ... SYSAD_END => {
@@ -270,16 +270,16 @@ impl MC {
                CART_DOM2_A2_START ... CART_DOM2_A2_END |
                CART_DOM1_A2_START ... CART_DOM1_A2_END |
                CART_DOM1_A3_START ... CART_DOM1_A3_END => {
-                panic!("Attempt to write to read-only cartridge memory {:#x}.", paddr)
+                panic!("Attempt to write to read-only cartridge memory address: {:#x}.", paddr)
             }, PIF_ROM_START ... PIF_ROM_END => {
-                panic!("Attempt to write to a read-only PIF memory {:#x}.", paddr)
+                panic!("Attempt to write to a read-only PIF memory address: {:#x}.", paddr)
             }, PIF_RAM_START ... PIF_RAM_END => {
                 wmem(paddr - PIF_RAM_START, value, &mut self.pif.pram)
             }, RESERVED_START ... RESERVED_END => {
-                panic!("Attempt to write to a reserved location {:#x}.", paddr)
+                panic!("Attempt to write to a reserved location address: {:#x}.", paddr)
             }, SYSAD_START ... SYSAD_END => {
                 unimplemented!()
-            }, _ => panic!("Write to unrecognized physical address: {:#x}", paddr)
+            }, _ => panic!("Write to unrecognized physical address: address: {:#x}", paddr)
         }
     }
 
@@ -312,6 +312,6 @@ fn vtop(vaddr: u32) -> u32 {
         }, KSEG1_START ... KSEG1_END => {
             /* Direct mapped segment KSEG1. */
             vaddr - KSEG1_START
-        }, _ => panic!("Unrecognized virtual address: {:#x}", vaddr)
+        }, _ => panic!("Unrecognized virtual address: address: {:#x}", vaddr)
     }
 }
