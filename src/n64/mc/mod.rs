@@ -238,7 +238,7 @@ impl MC {
         /* Match the memory address to a peripheral address range. */
         match paddr {
             RDRAM_MEM_START ... RDRAM_MEM_END => {
-                wmem(value, paddr - RDRAM_MEM_START, &mut self.iram)
+                wmem(paddr - RDRAM_MEM_START, value, &mut self.iram)
             }, RDRAM_REG_START ... RDRAM_REG_END => {
                 unimplemented!()
             }, SP_DMEM_START ... SP_DMEM_END => {
@@ -274,7 +274,7 @@ impl MC {
             }, PIF_ROM_START ... PIF_ROM_END => {
                 panic!("Attempt to write to a read-only PIF memory {:#x}.", paddr)
             }, PIF_RAM_START ... PIF_RAM_END => {
-                wmem(value, paddr - PIF_RAM_START, &mut self.pif.pram)
+                wmem(paddr - PIF_RAM_START, value, &mut self.pif.pram)
             }, RESERVED_START ... RESERVED_END => {
                 panic!("Attempt to write to a reserved location {:#x}.", paddr)
             }, SYSAD_START ... SYSAD_END => {
@@ -296,7 +296,7 @@ fn rmem(addr: u32, mem: &Box<[u8]>) -> u32 {
 }
 
 /* Writes a 32-bit word to a boxed slice of u8s. */
-fn wmem(val: u32, addr: u32, mem: &mut Box<[u8]>) {
+fn wmem(addr: u32, val: u32, mem: &mut Box<[u8]>) {
     /* Obtain a slice of bytes from the u32. */
     let from: &[u8] = &[(val >> 24) as u8, (val >> 16) as u8, (val >> 8) as u8, val as u8];
     /* Write the slice into memory. */

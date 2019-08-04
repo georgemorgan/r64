@@ -104,31 +104,38 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     }),
 
     &(Op::J, "j", OpC::J, &|p| {
-        unimplemented!()
+        p.ol = p.op.target();
+        p.ds = true;
     }),
 
     &(Op::Jal, "jal", OpC::J, &|p| {
-        unimplemented!()
+        p.ol = p.op.target();
+        p.ds = true;
+        p.wlr = true;
     }),
 
     // Branches to the branch address if register p.rs equals to p.rt.
     &(Op::Beq, "beq", OpC::B, &|p| {
-        p.br = if p.rt == p.rs { true } else { false }
+        p.br = if p.rt == p.rs { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is not equal to p.rt.
     &(Op::Bne, "bne", OpC::B, &|p| {
-        p.br = if p.rt != p.rs { true } else { false }
+        p.br = if p.rt != p.rs { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is less than 0.
     &(Op::Blez, "blez", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false }
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is greater than 0.
     &(Op::Bgtz, "bgtz", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false }
+        p.br = if (p.rs as i64) > 0 { true } else { false };
+        p.ds = true;
     })],
 
     /* ROW: 1 */
@@ -194,21 +201,25 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // Branches to the branch address if registers p.rs and p.rt are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Beql, "beql", OpC::B, &|p| {
-        p.br = if p.rt == p.rs { true } else { false }
+        p.br = if p.rt == p.rs { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if registers p.rs and p.rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bnel, "bnel", OpC::B, &|p| {
-        p.br = if p.rt != p.rs { true } else { false }
+        p.br = if p.rt != p.rs { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Blezl, "blezl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false }
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
     }),
 
     &(Op::Bgtzl, "bgtzl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false }
+        p.br = if (p.rs as i64) > 0 { true } else { false };
+        p.ds = true;
     })],
 
     /* ROW: 3 */
@@ -430,7 +441,8 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // Jumps to the address of register rs, delayed by one instruction.
     [&(Op::Jr, "jr", OpC::J, &|p| {
-        p.ol = p.rs
+        p.ol = p.rs;
+        p.ds = true;
     }),
 
     // Jumps to the address of register rs, delayed by one instruction.
@@ -438,6 +450,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     &(Op::Jalr, "jalr", OpC::J, &|p| {
         p.ol = p.rs;
         p.wlr = true;
+        p.ds = true;
     }),
 
     &RESERVED,
@@ -659,21 +672,25 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
     /* ROW: 0 */
 
     [&(Op::Bltz, "bltz", OpC::B, &|p| {
-        unimplemented!()
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
     }),
 
     &(Op::Bgez, "bgez", OpC::B, &|p| {
-        unimplemented!()
+        p.br = if (p.rs as i64) >= 0 { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bltzl, "bltzl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false }
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
     }),
 
     // Branches to the branch address if register p.rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bgezl, "bgezl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false }
+        p.br = if (p.rs as i64) > 0 { true } else { false };
+        p.ds = true;
     }),
 
     &RESERVED,
@@ -714,18 +731,27 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
     /* ROW: 2 */
 
     [&(Op::Bltzal, "bltzal", OpC::B, &|p| {
-        unimplemented!()
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
+        p.wlr = true;
     }),
 
     &(Op::Bgezal, "bgezal", OpC::B, &|p| {
-        unimplemented!()
+        p.br = if (p.rs as i64) >= 0 { true } else { false };
+        p.ds = true;
+        p.wlr = true;
     }),
 
     &(Op::Bltzall, "bltzall", OpC::B, &|p| {
+        p.br = if (p.rs as i64) < 0 { true } else { false };
+        p.ds = true;
+        p.wlr = true;
         unimplemented!()
     }),
 
     &(Op::Bgezall, "bgezall", OpC::B, &|p| {
+        p.ds = true;
+        p.wlr = true;
         unimplemented!()
     }),
 
@@ -786,6 +812,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
     /* ROW: 4 */
 
     [&(Op::Bc, "bc", OpC::C, &|p| {
+        p.ds = true;
         unimplemented!()
     }),
 

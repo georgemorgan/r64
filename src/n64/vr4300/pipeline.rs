@@ -2,8 +2,6 @@ use super::*;
 
 pub struct Pipeline {
 
-    pub gpr: [u64; GPR_SIZE],
-
     pc: u64,
 
     /* IC */
@@ -21,14 +19,17 @@ pub struct Pipeline {
     /* DC */
     pub dc: u64,
 
+    /* delay slot */
+    pub ds: bool,
+    dswlr: bool,
+    dsol: u64
+
 }
 
 impl Pipeline {
 
     pub fn new(pc: u64) -> Pipeline {
         Pipeline {
-
-            gpr: [0; GPR_SIZE],
 
             pc: pc,
 
@@ -41,7 +42,11 @@ impl Pipeline {
             br: false,
             wlr: false,
 
-            dc: 0
+            dc: 0,
+
+            ds: false,
+            dswlr: false,
+            dsol: 0,
 
         }
     }
@@ -51,51 +56,45 @@ impl Pipeline {
 /* IC - Instruction Cache Fetch */
 pub fn ic(cpu: &mut VR4300, mc: &MC) {
 
-    let p = &mut cpu.pipeline;
-
-    let val = mc.read(p.pc as u32);
-    p.op = Inst(val);
-    println!("{:#x}: ({:#x}) {}", p.pc, val, p.op);
+    let val = mc.read(cpu.pipeline.pc as u32);
+    cpu.pipeline.op = Inst(val);
+    println!("{:#x}: ({:#x}) {}", cpu.pipeline.pc, val, cpu.pipeline.op);
 }
 
 /* RF - Register Fetch */
 pub fn rf(cpu: &mut VR4300) {
 
-    let p = &mut cpu.pipeline;
+    cpu.pipeline.pc += 4;
 
-    p.pc += 4;
-
-    match p.op.class() {
+    match cpu.pipeline.op.class() {
         OpC::C => {
-            p.rs = cpu.cp0.gpr[p.op._rd()] as u64
+            cpu.pipeline.rs = cpu.cp0.rgpr(cpu.pipeline.op._rd()) as u64
         }, _ => {
-            p.rs = p.gpr[p.op._rs()];
+            cpu.pipeline.rs = cpu.rgpr(cpu.pipeline.op._rs());
         }
     }
 
-    p.rt = p.gpr[p.op._rt()];
+    cpu.pipeline.rt = cpu.rgpr(cpu.pipeline.op._rt());
 }
 
 /* EX - Execution */
 pub fn ex(cpu: &mut VR4300) {
 
-    let p = &mut cpu.pipeline;
-
-    match p.op.class() {
+    match cpu.pipeline.op.class() {
         OpC::L => {
 
         }, OpC::C => {
 
         }, OpC::B => {
-            p.op.ex()(p);
+            cpu.pipeline.op.ex()(&mut cpu.pipeline);
 
-            if p.br {
-                let offset = ((p.op.offset() as i16 as i32) << 2) as i64;
-                p.pc = (p.pc as i64 + offset) as u64;
+            if cpu.pipeline.br {
+                let offset = ((cpu.pipeline.op.offset() as i16 as i32) << 2) as i64;
+                cpu.pipeline.ol = (cpu.pipeline.pc as i64 + offset) as u64;
             }
 
         }, _ => {
-            p.op.ex()(p);
+            cpu.pipeline.op.ex()(&mut cpu.pipeline);
         }
     }
 }
@@ -103,15 +102,13 @@ pub fn ex(cpu: &mut VR4300) {
 /* DC - Data Cache Fetch */
 pub fn dc(cpu: &mut VR4300, mc: &mut MC) {
 
-    let p = &mut cpu.pipeline;
-
-    match p.op.class() {
+    match cpu.pipeline.op.class() {
         OpC::L => {
-            let base = p.rs as i64;
-            let offset = p.op.offset() as i16 as i64;
-            p.dc = mc.read((base + offset) as u32) as u64;
+            let base = cpu.pipeline.rs as i64;
+            let offset = cpu.pipeline.op.offset() as i16 as i64;
+            cpu.pipeline.dc = mc.read((base + offset) as u32) as u64;
             /* need to call the ex function as a hack to get ol populated */
-            p.op.ex()(p);
+            cpu.pipeline.op.ex()(&mut cpu.pipeline);
         }, _ => {
 
         }
@@ -121,30 +118,48 @@ pub fn dc(cpu: &mut VR4300, mc: &mut MC) {
 /* WB - Write Back */
 pub fn wb(cpu: &mut VR4300, mc: &mut MC) {
 
-    let p = &mut cpu.pipeline;
+    if cpu.pipeline.dsol > 0 {
+        if cpu.pipeline.dswlr {
+            cpu.wgpr(cpu.pipeline.pc, 31);
+        }
+        cpu.pipeline.pc = cpu.pipeline.dsol;
 
-    match p.op.class() {
+        cpu.pipeline.dswlr = false;
+        cpu.pipeline.dsol = 0;
+    }
+
+    if cpu.pipeline.ds {
+        cpu.pipeline.dswlr = cpu.pipeline.wlr;
+        cpu.pipeline.dsol = cpu.pipeline.ol;
+    }
+
+    match cpu.pipeline.op.class() {
         OpC::S => {
-            let base = p.rs as i64;
-            let offset = p.op.offset() as i16 as i64;
-            mc.write((base + offset) as u32, p.ol as u32);
+            let base = cpu.pipeline.rs as i64;
+            let offset = cpu.pipeline.op.offset() as i16 as i64;
+            mc.write((base + offset) as u64 as u32, cpu.pipeline.ol as u32);
         }, OpC::C => {
             /* write back to rt on the coprocessor */
-            cpu.cp0.gpr[p.op._rt()] = p.ol as u32;
+            cpu.cp0.wgpr(cpu.pipeline.ol as u32, cpu.pipeline.op._rt());
         }, OpC::B => {
-            // nop
-        }  OpC::J => {
-            if p.wlr {
-                p.gpr[31] = p.pc + 8;
+            /* invalidate the instruction in the delay slot if the branch is not taken */
+            if !cpu.pipeline.br {
+                cpu.pipeline.dswlr = false;
+                cpu.pipeline.dsol = 0;
             }
-            p.pc = p.ol;
+            else if !cpu.pipeline.ds
+            {
+                cpu.pipeline.pc = cpu.pipeline.ol;
+            }
+        }  OpC::J => {
+            // nop
         } _ => {
             /* write back to rt */
-            p.gpr[p.op._rt()] = p.ol;
+            cpu.wgpr(cpu.pipeline.ol, cpu.pipeline.op._rt());
         }
     }
 
-    /* write back the program counter */
-    p.gpr[31] = p.pc;
+    cpu.pipeline.ds = false;
+    cpu.pipeline.wlr = false;
 
 }

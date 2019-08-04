@@ -131,22 +131,22 @@ impl fmt::Display for Inst {
                     OpC::I => {
                         write!(f, "{} {}, {}, {:#x}", self.op_str(), GPR_NAMES[self._rt()], GPR_NAMES[self._rs()], self.imm())
                     }, OpC::L | OpC::S => {
-                        write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self._rt()], self.offset(), GPR_NAMES[self._rs()])
+                        write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self._rt()], self.offset() as i16, GPR_NAMES[self._rs()])
                     }, OpC::J => {
 
                         match self.op() {
 
                             Op::J | Op::Jal  => {
-                                write!(f, "{} {:#x}\n", self.op_str(), self.target())
+                                write!(f, "{} {:#x}", self.op_str(), self.target())
                             }, Op::Jr | Op::Jalr => {
-                                write!(f, "{} {}\n", self.op_str(),GPR_NAMES[self._rs()])
+                                write!(f, "{} {}", self.op_str(),GPR_NAMES[self._rs()])
                             }, _ => {
                                 panic!("Unimplemented jump kind {:#x}", self.op() as u32)
                             }
 
                         }
                     }, OpC::B => {
-                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self._rs()], GPR_NAMES[self._rt()], (self.offset() as i16 as i32) << 2)
+                        write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self._rs()], GPR_NAMES[self._rt()], (self.offset() as i16 as i32) << 2)
                     }, OpC::R => {
                         write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self._rd()], GPR_NAMES[self._rs()], GPR_NAMES[self._rt()])
                     }, OpC::C => {

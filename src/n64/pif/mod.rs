@@ -24,7 +24,7 @@ impl PIF {
     pub fn new(pr: Box<[u8]>) -> PIF {
         PIF {
             /* Allocate the PRAM. */
-            pram: vec![0; (PIF_RAM_END - PIF_RAM_START) as usize].into_boxed_slice(),
+            pram: vec![0; (PIF_RAM_END - PIF_RAM_START + 1) as usize].into_boxed_slice(),
             /* Transfer ownership of the PROM. */
             prom: pr,
 

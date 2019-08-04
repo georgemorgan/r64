@@ -51,6 +51,8 @@ pub struct VR4300 {
     /* floating point co-processor */
     pub cp1: CP1,
 
+    pub gpr: [u64; GPR_SIZE],
+
     pub hi: u64,
     pub lo: u64,
     pub ll: u8,
@@ -66,9 +68,25 @@ impl VR4300 {
             cp0: CP0::new(),
             cp1: CP1::new(),
 
+            gpr: [0; GPR_SIZE],
+
             hi: 0,
             lo: 0,
             ll: 0,
+        }
+    }
+
+    fn rgpr(&self, reg: usize) -> u64 {
+        self.gpr[reg]
+    }
+
+    fn wgpr(&mut self, val: u64, reg: usize) {
+        match reg {
+            0 => {
+
+            }, _ => {
+                self.gpr[reg] = val;
+            },
         }
     }
 
@@ -96,7 +114,7 @@ impl fmt::Debug for VR4300 {
                 try!(writeln!(f, ""))
             }
 
-            try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.pipeline.gpr[r]))
+            try!(write!(f, "{:02} ({}): {:#018X} ", r, GPR_NAMES[r], self.rgpr(r)))
         }
 
         try!(writeln!(f, ""));
@@ -106,7 +124,7 @@ impl fmt::Debug for VR4300 {
                 try!(writeln!(f, ""))
             }
 
-            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.gpr[r]))
+            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
         }
 
         Ok(())
