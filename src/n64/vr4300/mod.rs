@@ -2,7 +2,7 @@
 
 /*
 
-CPU0
+VR43000
 
   00h = r0/reg0     08h = t0/reg8     10h = s0/reg16    18h = t8/reg24
   01h = at/reg1     09h = t1/reg9     11h = s1/reg17    19h = t9/reg25
@@ -24,24 +24,27 @@ const GPR_NAMES: [&'static str; GPR_SIZE] = [
 
 use std::fmt;
 
-use n64::MC;
-
-mod op;
-use self::op::*;
-
-mod instruction;
-use self::instruction::Inst;
+use n64::*;
 
 mod cp0;
-use self::cp0::*;
-
 mod cp1;
+mod op;
+mod instruction;
+
+use self::cp0::*;
 use self::cp1::*;
+use self::op::*;
+use self::instruction::*;
 
 /* Size of the general purpose register file. */
 const GPR_SIZE: usize = 32;
 
-pub struct CPU {
+pub trait MIPS64 {
+    fn rgpr(&self, reg: usize) -> u64;
+    fn wgpr(&mut self, val: u64, reg: usize);
+}
+
+pub struct VR4300 {
     /* mmu / tlb co-processor */
     pub cp0: CP0,
     /* floating point co-processor */
@@ -58,10 +61,26 @@ pub struct CPU {
     pub last: u32
 }
 
-impl CPU {
+impl MIPS64 for VR4300 {
+    fn rgpr(&self, reg: usize) -> u64 {
+        self.gpr[reg]
+    }
 
-    pub fn new(pc: u64) -> CPU {
-        CPU {
+    fn wgpr(&mut self, val: u64, reg: usize) {
+        match reg {
+            0 => {
+
+            }, _ => {
+                self.gpr[reg] = val;
+            },
+        }
+    }
+}
+
+impl VR4300 {
+
+    pub fn new(pc: u64) -> VR4300 {
+        VR4300 {
             cp0: CP0::new(),
             cp1: CP1::new(),
 
@@ -76,45 +95,31 @@ impl CPU {
         }
     }
 
-    fn rgpr(&self, reg: usize) -> u64 {
-        self.gpr[reg]
-    }
-
-    fn wgpr(&mut self, val: u64, reg: usize) {
-        match reg {
-            0 => {
-
-            }, _ => {
-                self.gpr[reg] = val;
-            },
-        }
-    }
-
     pub fn exec(&mut self, i: Inst, mc: &mut MC) {
 
         match i.class() {
 
             OpC::I => {
 
-                let rs = self.rgpr(i.rs());
+                let rs = i.rs(self);
                 let imm = i.imm();
-                let rt = i.function()(0, rs, imm);
-                self.wgpr(rt, i.rt());
+                let rt = i.function()(&i, self);
+                i.wrt(self, rt)
 
             }, OpC::L => {
 
-                let base = self.rgpr(i.rs()) as i64;
+                let base = i.rs(self) as i64;
                 let offset = i.offset() as i16 as i64;
                 let val = mc.read((base + offset) as u32) as u64;
-                let rt = i.function()(val, 0, 0);
-                self.wgpr(rt, i.rt());
+                let rt = i.function()(&i, self);
+                i.wrt(self, rt)
 
             }, OpC::S => {
 
-                let base = self.rgpr(i.rs()) as i64;
+                let base = i.rs(self) as i64;
                 let offset = i.offset() as i16 as i64;
-                let rt = self.rgpr(i.rt());
-                let val = i.function()(rt, 0, 0) as u32;
+                let rt = i.rt(self);
+                let val = i.function()(&i, self) as u32;
                 mc.write((base + offset) as u32, val);
 
             }, OpC::J => {
@@ -137,15 +142,15 @@ impl CPU {
 
                     }, Op::Jr => {
 
-                        let target = self.rgpr(i.rs());
+                        let target = i.rs(self);
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
 
                     }, Op::Jalr => {
 
-                        let target = self.rgpr(i.rs());
+                        let target = i.rs(self);
                         let pc = self.pc;
-                        self.wgpr(pc, i.rd());
+                        i.wrd(self, pc);
                         /* sub 4 here because we will inc the pc by 4 later */
                         self.pc = target - 4;
 
@@ -157,21 +162,21 @@ impl CPU {
 
             }, OpC::B => {
 
-                let rs = self.rgpr(i.rs());
-                let rt = self.rgpr(i.rt());
+                let rs = i.rs(self);
+                let rt = i.rt(self);
                 let offset = ((i.offset() as i16 as i32) << 2) as i64;
 
-                let should_branch = i.function()(rt, rs, 0);
+                let should_branch = i.function()(&i, self);
                 if should_branch > 0 {
                     self.pc = (self.pc as i64 + offset) as u64;
                 }
 
             }, OpC::R => {
 
-                let rs = self.rgpr(i.rs());
-                let rt = self.rgpr(i.rt());
-                let rd = i.function()(rt, rs, i.sa());
-                self.wgpr(rd, i.rd())
+                let rs = i.rs(self);
+                let rt = i.rt(self);
+                let rd = i.function()(&i, self);
+                self.wgpr(rd, i._rd())
 
             }, OpC::C => {
 
@@ -188,7 +193,7 @@ impl CPU {
                     }, _ => {
                         panic!("Not a coprocessor instruction.");
                     }
-                    
+
                 }
 
             }
@@ -214,19 +219,17 @@ impl CPU {
     }
 }
 
-pub fn print_last(cpu: &CPU) {
+pub fn print_last(cpu: &mut VR4300) {
 
     let i = Inst(cpu.last);
 
     println!("{}", i);
-    println!("{:02} ({}): {:#018X} ", i.rd(), GPR_NAMES[i.rd()], cpu.rgpr(i.rd()));
-    println!("{:02} ({}): {:#018X} ", i.rt(), GPR_NAMES[i.rt()], cpu.rgpr(i.rt()));
-    println!("{:02} ({}): {:#018X} ", i.rs(), GPR_NAMES[i.rs()], cpu.rgpr(i.rs()));
+    println!("{:02} ({}): {:#018X} ", i._rd(), GPR_NAMES[i._rd()], i.rd(cpu));
+    println!("{:02} ({}): {:#018X} ", i._rt(), GPR_NAMES[i._rt()], i.rt(cpu));
+    println!("{:02} ({}): {:#018X} ", i._rs(), GPR_NAMES[i._rs()], i.rs(cpu));
 }
 
-use self::cp0::CP0_NAMES;
-
-impl fmt::Debug for CPU {
+impl fmt::Debug for &mut VR4300 {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
@@ -242,15 +245,15 @@ impl fmt::Debug for CPU {
 
         try!(writeln!(f, ""));
 
-        for r in 0..GPR_SIZE {
-            if (r % REGS_PER_LINE) == 0 {
-                try!(writeln!(f, ""))
-            }
+        // for r in 0..GPR_SIZE {
+        //     if (r % REGS_PER_LINE) == 0 {
+        //         try!(writeln!(f, ""))
+        //     }
+        //
+        //     try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
+        // }
 
-            try!(write!(f, "{:02} ({:8}): {:#018X} ", r, cp0::CP0_NAMES[r], self.cp0.rgpr(r)))
-        }
-
-        try!(write!(f, "\n\nCPU Floating Point Registers:"));
+        try!(write!(f, "\n\nVR4300 Floating Point Registers:"));
 
         // for r in 0..GPR_SIZE {
         //     if (r % REGS_PER_LINE) == 0 {

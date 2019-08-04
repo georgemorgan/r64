@@ -2,9 +2,7 @@
 
 use std::fmt;
 
-use n64::cpu::op::*;
-use n64::cpu::GPR_NAMES;
-use n64::cpu::CP0_NAMES;
+use super::*;
 
 pub struct Inst(pub u32);
 
@@ -28,13 +26,13 @@ impl Inst {
             Op::Special => {
                 return SP_OP_TABLE[((self.funct() >> 3) & 0b111) as usize][(self.funct() & 0b111) as usize];
             }, Op::RegImm => {
-                return RI_OP_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize];
+                return RI_OP_TABLE[((self._rt() >> 3) & 0b11) as usize][(self._rt() & 0b111) as usize];
             }, Op::Cop0 => {
-                let t = COP_OP_RS_TABLE[((self.rs() >> 3) & 0b11) as usize][(self.rs() & 0b111) as usize];
+                let t = COP_OP_RS_TABLE[((self._rs() >> 3) & 0b11) as usize][(self._rs() & 0b111) as usize];
                 match t.0 {
                     Op::Bc => {
                         /* If the instruction is Bc, we have to get the extended opcode from the RT table. */
-                        return COP_OP_RT_TABLE[((self.rt() >> 3) & 0b11) as usize][(self.rt() & 0b111) as usize];
+                        return COP_OP_RT_TABLE[((self._rt() >> 3) & 0b11) as usize][(self._rt() & 0b111) as usize];
                     }, Op::Co => {
                         /* If the instruction is a Co instruction, then access it from the FN table. */
                         return COP_OP_FN_TABLE[((self.funct() >> 3) & 0b11) as usize][(self.funct() & 0b111) as usize];
@@ -83,18 +81,48 @@ impl Inst {
     }
 
     /* Returns the instruction's source register. */
-    pub fn rs(&self) -> usize {
-        return ((self.0 >> 21) & 0b11111) as usize;
+    pub fn _rs(&self) -> usize {
+        ((self.0 >> 21) & 0b11111) as usize
+    }
+
+    /* Returns the value of the CPU's rs register. */
+    pub fn rs<T: MIPS64>(&self, cpu: &T) -> u64 {
+        cpu.rgpr(self._rs())
+    }
+
+    /* Writes a value to the CPU's rs register. */
+    pub fn wrs<T: MIPS64>(&self, cpu: &mut T, val: u64) {
+        cpu.wgpr(val, self._rs());
     }
 
     /* Returns the instruction's target register. */
-    pub fn rt(&self) -> usize {
-        return ((self.0 >> 16) & 0b11111) as usize;
+    pub fn _rt(&self) -> usize {
+        ((self.0 >> 16) & 0b11111) as usize
+    }
+
+    /* Returns the value of the CPU's rt register. */
+    pub fn rt<T: MIPS64>(&self, cpu: &T) -> u64 {
+        cpu.rgpr(self._rt())
+    }
+
+    /* Writes a value to the CPU's rt register. */
+    pub fn wrt<T: MIPS64>(&self, cpu: &mut T, val: u64) {
+        cpu.wgpr(val, self._rt());
     }
 
     /* Returns the instruciton's destination register. */
-    pub fn rd(&self) -> usize {
+    pub fn _rd(&self) -> usize {
         return ((self.0 >> 11) & 0b11111) as usize;
+    }
+
+    /* Returns the value of the CPU's rd register. */
+    pub fn rd<T: MIPS64>(&self, cpu: &T) -> u64 {
+        return cpu.rgpr(self._rd());
+    }
+
+    /* Writes a value to the CPU's rd register. */
+    pub fn wrd<T: MIPS64>(&self, cpu: &mut T, val: u64) {
+        cpu.wgpr(val, self._rd());
     }
 
     /* Returns the instruction's shift amount. */
@@ -127,13 +155,13 @@ impl fmt::Display for Inst {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.kind() {
             Op::Cop0 | Op::Cop1 | Op::Cop2 => {
-                write!(f, "{} {}, {}", self.op_str(), GPR_NAMES[self.rt()],  CP0_NAMES[self.rd()])
+                write!(f, "{} {}, {}", self.op_str(), GPR_NAMES[self._rt()],  CP0_NAMES[self._rd()])
             }, _ => {
                 match self.class() {
                     OpC::I => {
-                        write!(f, "{} {}, {}, {:#x}", self.op_str(), GPR_NAMES[self.rt()], GPR_NAMES[self.rs()], self.imm())
+                        write!(f, "{} {}, {}, {:#x}", self.op_str(), GPR_NAMES[self._rt()], GPR_NAMES[self._rs()], self.imm())
                     }, OpC::L | OpC::S => {
-                        write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self.rt()], self.offset(), GPR_NAMES[self.rs()])
+                        write!(f, "{} {}, {}({})", self.op_str(), GPR_NAMES[self._rt()], self.offset(), GPR_NAMES[self._rs()])
                     }, OpC::J => {
 
                         match self.op() {
@@ -141,16 +169,16 @@ impl fmt::Display for Inst {
                             Op::J | Op::Jal  => {
                                 write!(f, "{} {:#x}\n", self.op_str(), self.target())
                             }, Op::Jr | Op::Jalr => {
-                                write!(f, "{} {}\n", self.op_str(),GPR_NAMES[self.rs()])
+                                write!(f, "{} {}\n", self.op_str(),GPR_NAMES[self._rs()])
                             }, _ => {
                                 panic!("Unimplemented jump kind {:#x}", self.op() as u32)
                             }
 
                         }
                     }, OpC::B => {
-                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self.rs()], GPR_NAMES[self.rt()], (self.offset() as i16 as i32) << 2)
+                        write!(f, "{} {}, {}, {}\n", self.op_str(), GPR_NAMES[self._rs()], GPR_NAMES[self._rt()], (self.offset() as i16 as i32) << 2)
                     }, OpC::R => {
-                        write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self.rd()], GPR_NAMES[self.rs()], GPR_NAMES[self.rt()])
+                        write!(f, "{} {}, {}, {}", self.op_str(), GPR_NAMES[self._rd()], GPR_NAMES[self._rs()], GPR_NAMES[self._rt()])
                     }, OpC::C => {
                         write!(f, "coprocessor inst... ")
                     }

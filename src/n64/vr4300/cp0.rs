@@ -26,13 +26,23 @@ pub const CP0_NAMES: [&'static str; GPR_SIZE] = [
     "RESERVED",    "PRevID",      "RESERVED",    "RESERVED"
 ];
 
-use n64::cpu::GPR_SIZE;
-use n64::cpu::instruction::Inst;
-use n64::cpu::op::Op;
+use super::*;
 
 pub struct CP0 {
     /* the 32-bit cop0 general purpose registers */
     regs: [u32; GPR_SIZE],
+}
+
+impl MIPS64 for CP0 {
+    /* reads from a cop0 register */
+    fn rgpr(&self, reg: usize) -> u64 {
+        self.regs[reg] as u64
+    }
+
+    /* writes to a cop0 register */
+    fn wgpr(&mut self, val: u64, reg: usize) {
+        self.regs[reg] = val as u32;
+    }
 }
 
 impl CP0 {
@@ -44,35 +54,25 @@ impl CP0 {
         }
     }
 
-    /* reads from a cop0 register */
-    pub fn rgpr(&self, reg: usize) -> u64 {
-        self.regs[reg] as u64
-    }
-
-    /* writes to a cop0 register */
-    pub fn wgpr(&mut self, val: u64, reg: usize) {
-        self.regs[reg] = val as u32;
-    }
-
     pub fn exec(&mut self, i: Inst) {
 
         match i.op() {
 
             Op::Mf => {
-                let rt = self.rgpr(i.rt());
-                self.wgpr(rt, i.rt())
+                let rt = i.rt(self);
+                i.wrt(self, rt);
             }, Op::Dmf => {
-                let rt = self.rgpr(i.rt());
-                self.wgpr(rt, i.rt())
+                let rt = i.rt(self);
+                i.wrt(self, rt);
             }, Op::Cf => {
                 unimplemented!()
             }, Op::Mt => {
-                let rt = self.rgpr(i.rt());
-                self.wgpr(rt, i.rt())
+                let rt = i.rt(self);
+                i.wrt(self, rt);
             }, Op::Dmt => {
                 // Transfers the contents of the general purpose register rt of the CPU to the general purpose register rd of coprocessor z.
-                let rt = self.rgpr(i.rt());
-                self.wgpr(rt, i.rt());
+                let rt = i.rt(self);
+                i.wrt(self, rt);;
             }, Op::Ct => {
                 unimplemented!();
             }, Op::Bcf => {

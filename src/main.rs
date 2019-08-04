@@ -59,7 +59,7 @@ fn main() {
     let mut n64 = N64::new(crom, prom);
 
     loop {
-        println!("{:?}", n64::cpu::print_last(&n64.cpu));
+        println!("{:?}", n64::vr4300::print_last(&mut n64.cpu));
         n64.cycle();
     }
 

@@ -1,7 +1,6 @@
 /* cp1.rs - The CP1 (Co-Processor 1) module. */
 
-use n64::cpu::GPR_SIZE;
-use n64::cpu::instruction::Inst;
+use super::*;
 
 const CP1_CONFIG: usize = 0x10;
 

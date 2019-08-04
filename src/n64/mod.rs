@@ -10,8 +10,8 @@ mod rdp;
 mod pif;
 mod mc;
 use self::mc::MC;
-pub mod cpu;
-use self::cpu::CPU;
+pub mod vr4300;
+use self::vr4300::VR4300;
 
 #[repr(C, packed)]
 pub struct N64_ROM_HEADER {
@@ -38,8 +38,8 @@ pub struct N64 {
 
     /* CPU-NUS */
 
-    /* Virtual VR4300 MIPS 64-bit CPU. */
-    pub cpu: CPU
+    /* Virtual VR4300 MIPS 64-bit VR4300. */
+    pub cpu: VR4300
 }
 
 impl N64 {
@@ -48,8 +48,8 @@ impl N64 {
     pub fn new(cr: Box<[u8]>, pr: Box<[u8]>) -> N64 {
         N64 {
             mc: MC::new(cr, pr),
-            /* CPU-NUS */
-            cpu: CPU::new((mc::PIF_ROM_START | mc::KSEG0_START) as u64),
+            /* VR4300-NUS */
+            cpu: VR4300::new((mc::PIF_ROM_START | mc::KSEG0_START) as u64),
         }
     }
 
