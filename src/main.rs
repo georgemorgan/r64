@@ -77,6 +77,7 @@ fn main() {
                     }, "go" | "g" => {
                         loop {
                             n64.cycle();
+                            //println!("{:?}", n64.cpu);
                         }
                     }, "step" | "s" | _ => {
                         n64.cycle();

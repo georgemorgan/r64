@@ -409,8 +409,10 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
 
+    // Shifts the contents of register rt sa bits to the left, and inserts 0 to the loworder bits.
+    // Sign-extends (in the 64-bit mode) the 32-bit result and stores it to register rd.
     [&(Op::Sll, "sll", OpC::R, &|p| {
-        unimplemented!()
+        p.ol = ((p.rt as u32) << p.op.sa()) as i32 as i64 as u64
     }),
 
     &RESERVED,
@@ -418,7 +420,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     // Shifts the contents of register rt sa bits to the right, and inserts 0 to the highorder bits.
     // Sign-extends (in the 64-bit mode) the 32-bit result and stores it to register rd.
     &(Op::Srl, "srl", OpC::R, &|p| {
-        p.ol = (p.rt as u32 >> p.op.sa()) as i32 as i64 as u64
+        p.ol = ((p.rt as u32) >> p.op.sa()) as i32 as i64 as u64
     }),
 
     &(Op::Sra, "sra", OpC::R, &|p| {
@@ -459,8 +461,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     &RESERVED,
 
     &(Op::Syscall, "syscall", OpC::R, &|p| {
-        let result = if p.rt == 16 { "Pass" }  else { "Fail" };
-        println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", p.rs, 0, p.op.sa(), result);
+        unimplemented!()
     }),
 
     &(Op::Brk, "brk", OpC::R, &|p| {

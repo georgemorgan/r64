@@ -58,7 +58,7 @@ pub fn ic(cpu: &mut VR4300, mc: &MC) {
 
     let val = mc.read(cpu.pipeline.pc as u32);
     cpu.pipeline.op = Inst(val);
-    println!("{:#x}: ({:#x}) {}", cpu.pipeline.pc, val, cpu.pipeline.op);
+    //println!("{:#x}: ({:#x}) {}", cpu.pipeline.pc, val, cpu.pipeline.op);
 }
 
 /* RF - Register Fetch */
@@ -80,21 +80,30 @@ pub fn rf(cpu: &mut VR4300) {
 /* EX - Execution */
 pub fn ex(cpu: &mut VR4300) {
 
-    match cpu.pipeline.op.class() {
-        OpC::L => {
-
-        }, OpC::C => {
-
-        }, OpC::B => {
-            cpu.pipeline.op.ex()(&mut cpu.pipeline);
-
-            if cpu.pipeline.br {
-                let offset = ((cpu.pipeline.op.offset() as i16 as i32) << 2) as i64;
-                cpu.pipeline.ol = (cpu.pipeline.pc as i64 + offset) as u64;
+    match cpu.pipeline.op.op() {
+        Op::Syscall => {
+            if cpu.pipeline.op.sa() > 0 {
+                let result = if cpu.pipeline.op._rt() == 16 { "Pass" }  else { "Fail" };
+                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pipeline.op._rs(), cpu.pipeline.op._rd(), cpu.pipeline.op.sa(), result);
             }
-
         }, _ => {
-            cpu.pipeline.op.ex()(&mut cpu.pipeline);
+            match cpu.pipeline.op.class() {
+                OpC::L => {
+
+                }, OpC::C => {
+
+                }, OpC::B => {
+                    cpu.pipeline.op.ex()(&mut cpu.pipeline);
+
+                    if cpu.pipeline.br {
+                        let offset = ((cpu.pipeline.op.offset() as i16 as i32) << 2) as i64;
+                        cpu.pipeline.ol = (cpu.pipeline.pc as i64 + offset) as u64;
+                    }
+
+                }, _ => {
+                    cpu.pipeline.op.ex()(&mut cpu.pipeline);
+                }
+            }
         }
     }
 }
@@ -151,11 +160,14 @@ pub fn wb(cpu: &mut VR4300, mc: &mut MC) {
             {
                 cpu.pipeline.pc = cpu.pipeline.ol;
             }
-        }  OpC::J => {
+        }, OpC::J => {
             // nop
-        } _ => {
+        }, OpC::L | OpC::I => {
             /* write back to rt */
             cpu.wgpr(cpu.pipeline.ol, cpu.pipeline.op._rt());
+        }, OpC::R => {
+            /* write back to rd */
+            cpu.wgpr(cpu.pipeline.ol, cpu.pipeline.op._rd());
         }
     }
 
