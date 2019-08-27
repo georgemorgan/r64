@@ -1,4 +1,4 @@
-/* op.p.rs - Exposes all of the possible VR4300i opcodes and their implementations. */
+/* op.p.rf.rs - Exposes all of the possible VR4300i opcodes and their implementations. */
 
 #[derive(Copy, Clone)]
 pub enum OpC {
@@ -51,14 +51,14 @@ pub enum Op {
     Bltzal,     Bgezal,     Bltzall,    Bgezall,    /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
 
-    /* COPz p.rs opcodes. */
+    /* COPz p.rf.rs opcodes. */
 
     Mf,            Dmf,        Cf,            /**/        Mt,            Dmt,        Ct,            /**/
     Bc,            /**/        /**/        /**/        /**/        /**/        /**/        /**/
     Co,            /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
     /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */    /* Co */
 
-    /* COPz p.rt opcodes. */
+    /* COPz p.rf.rt opcodes. */
 
     Bcf,        Bct,        Bcfl,        Bctl,        /**/        /**/        /**/        /**/
     /**/        /**/        /**/        /**/        /**/        /**/        /**/        /**/
@@ -81,7 +81,7 @@ pub enum Op {
 
 use super::*;
 
-pub type OpF = &'static Fn(&mut Pipeline);
+pub type OpF = &'static Fn(&mut Pls);
 
 pub type OpTup = (Op, &'static str, OpC, OpF);
 
@@ -89,7 +89,7 @@ const RESERVED: OpTup = (Op::Reserved, "reserved", OpC::R, &|p| {
     unimplemented!()
 });
 
-/* A constant 2-d array of the opcode p.dcues. */
+/* A constant 2-d array of the opcode p.dc.dcues. */
 
 pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
@@ -104,83 +104,77 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     }),
 
     &(Op::J, "j", OpC::J, &|p| {
-        p.ol = p.op.target();
-        p.ds = true;
+        p.ex.ol = p.ic.op.target();
     }),
 
     &(Op::Jal, "jal", OpC::J, &|p| {
-        p.ol = p.op.target();
-        p.ds = true;
-        p.wlr = true;
+        p.ex.ol = p.ic.op.target();
+        p.ex.wlr = true;
     }),
 
-    // Branches to the branch address if register p.rs equals to p.rt.
+    // Branches to the branch address if register p.rf.rs equals to p.rf.rt.
     &(Op::Beq, "beq", OpC::B, &|p| {
-        p.br = if p.rt == p.rs { true } else { false };
-        p.ds = true;
+        p.ex.br = if p.rf.rt == p.rf.rs { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is not equal to p.rt.
+    // Branches to the branch address if register p.rf.rs is not equal to p.rf.rt.
     &(Op::Bne, "bne", OpC::B, &|p| {
-        p.br = if p.rt != p.rs { true } else { false };
-        p.ds = true;
+        p.ex.br = if p.rf.rt != p.rf.rs { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is less than 0.
+    // Branches to the branch address if register p.rf.rs is less than 0.
     &(Op::Blez, "blez", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is greater than 0.
+    // Branches to the branch address if register p.rf.rs is greater than 0.
     &(Op::Bgtz, "bgtz", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) > 0 { true } else { false };
     })],
 
     /* ROW: 1 */
 
-    // Sign-extends the 16-bit immediate and adds it to register p.rs. Stores the 32-bit result to register p.rt (sign-extends the result in the 64-bit mode).
-    // Generates an exception if a 2's complement integer overflow occup.rs.
+    // Sign-extends the 16-bit immediate and adds it to register p.rf.rs. Stores the 32-bit result to register p.rf.rt (sign-extends the result in the 64-bit mode).
+    // Generates an exception if a 2's complement integer overflow occup.rf.rs.
     [&(Op::Addi, "addi", OpC::I, &|p| {
-        p.ol = (p.rs as i64 + p.op.imm() as i16 as i64) as u64
+        p.ex.ol = (p.rf.rs as i64 + p.ic.op.imm() as i16 as i64) as u64
     }),
 
-    // Sign-extends the 16-bit immediate and adds it to register p.rs. Stores the 32-bit result to register p.rt (sign-extends the result in the 64-bit mode).
-    // Does not generate an exception even if an integer overflow occup.rs.
+    // Sign-extends the 16-bit immediate and adds it to register p.rf.rs. Stores the 32-bit result to register p.rf.rt (sign-extends the result in the 64-bit mode).
+    // Does not generate an exception even if an integer overflow occup.rf.rs.
     &(Op::Addiu, "addiu", OpC::I, &|p| {
-        p.ol = (p.rs as i64 + p.op.imm() as i16 as i64) as u64
+        p.ex.ol = (p.rf.rs as i64 + p.ic.op.imm() as i16 as i64) as u64
     }),
 
-    // Sign-extends the 16-bit immediate and compares it with register p.rs as a signed integer. If p.rs is less than the immediate, stores 1 to register p.rt; otherwise, stores 0 to register p.rt.
+    // Sign-extends the 16-bit immediate and compares it with register p.rf.rs as a signed integer. If p.rf.rs is less than the immediate, stores 1 to register p.rf.rt; otherwise, stores 0 to register p.rf.rt.
     &(Op::Slti, "slti", OpC::I, &|p| {
-        p.ol = if (p.rs as i64) < p.op.imm() as i16 as i64 { 1 } else { 0 }
+        p.ex.ol = if (p.rf.rs as i64) < p.ic.op.imm() as i16 as i64 { 1 } else { 0 }
     }),
 
-    // Sign-extends the 16-bit immediate and compares it with register p.rs as an unsigned integer. If p.rs is less than the immediate, stores 1 to register p.rt; otherwise, stores 0 to register p.rt.
+    // Sign-extends the 16-bit immediate and compares it with register p.rf.rs as an unsigned integer. If p.rf.rs is less than the immediate, stores 1 to register p.rf.rt; otherwise, stores 0 to register p.rf.rt.
     &(Op::Sltiu, "sltiu", OpC::I, &|p| {
-        p.ol = if (p.rs as u64) < p.op.imm() as i16 as i64 as u64 { 1 } else { 0 }
+        p.ex.ol = if (p.rf.rs as u64) < p.ic.op.imm() as i16 as i64 as u64 { 1 } else { 0 }
     }),
 
-    // Zero-extends the 16-bit immediate, ANDs it with register p.rs, and stores the result to register p.rt.
+    // Zero-extends the 16-bit immediate, ANDs it with register p.rf.rs, and stores the result to register p.rf.rt.
     &(Op::Andi, "andi", OpC::I, &|p| {
-        p.ol = (p.rs as u64) & (p.op.imm() as u64)
+        p.ex.ol = (p.rf.rs as u64) & (p.ic.op.imm() as u64)
     }),
 
-    // Zero-extends the 16-bit immediate, ORs it with register p.rs, and stores the result to register p.rt.
+    // Zero-extends the 16-bit immediate, ORs it with register p.rf.rs, and stores the result to register p.rf.rt.
     &(Op::Ori, "ori", OpC::I, &|p| {
-        p.ol = (p.rs as u64) | (p.op.imm() as u64)
+        p.ex.ol = (p.rf.rs as u64) | (p.ic.op.imm() as u64)
     }),
 
-    // Zero-extends the 16-bit immediate, exclusive-ORs it with register p.rs, and stores the result to register p.rt.
+    // Zero-extends the 16-bit immediate, exclusive-ORs it with register p.rf.rs, and stores the result to register p.rf.rt.
     &(Op::Xori, "xori", OpC::I, &|p| {
-        p.ol = (p.rs as u64) ^ (p.op.imm() as u64)
+        p.ex.ol = (p.rf.rs as u64) ^ (p.ic.op.imm() as u64)
     }),
 
-    // Shifts the 16-bit immediate 16 bits to the left, and cleap.rs the low-order 16 bits of the word to 0.
-    // Stores the result to register p.rt (by sign-extending the result in the 64-bit mode).
+    // Shifts the 16-bit immediate 16 bits to the left, and cleap.rf.rs the low-order 16 bits of the word to 0.
+    // Stores the result to register p.rf.rt (by sign-extending the result in the 64-bit mode).
     &(Op::Lui, "lui", OpC::I, &|p| {
-        p.ol = (((p.op.imm() as u32) << 16) & !0xFFFF) as i32 as i64 as u64
+        p.ex.ol = (((p.ic.op.imm() as u32) << 16) & !0xFFFF) as i32 as i64 as u64
     })],
 
     /* ROW: 2 */
@@ -199,27 +193,23 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
 
     &RESERVED,
 
-    // Branches to the branch address if registers p.rs and p.rt are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    // Branches to the branch address if registers p.rf.rs and p.rf.rt are equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Beql, "beql", OpC::B, &|p| {
-        p.br = if p.rt == p.rs { true } else { false };
-        p.ds = true;
+        p.ex.br = if p.rf.rt == p.rf.rs { true } else { false };
     }),
 
-    // Branches to the branch address if registers p.rs and p.rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    // Branches to the branch address if registers p.rf.rs and p.rf.rt are not equal. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bnel, "bnel", OpC::B, &|p| {
-        p.br = if p.rt != p.rs { true } else { false };
-        p.ds = true;
+        p.ex.br = if p.rf.rt != p.rf.rs { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    // Branches to the branch address if register p.rf.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Blezl, "blezl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
     }),
 
     &(Op::Bgtzl, "bgtzl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) > 0 { true } else { false };
     })],
 
     /* ROW: 3 */
@@ -250,13 +240,13 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Sign-extends the contents of a byte specified by the address and loads the result to register rt.
     [&(Op::Lb, "lb", OpC::L, &|p| {
-        p.ol  = (p.dc & 0xff) as i8 as i64 as u64
+        p.ex.ol  = (p.dc.dc & 0xff) as i8 as i64 as u64
     }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Sign-extends the contents of a halfword specified by the address and loads the result to register rt.
     &(Op::Lh, "lh", OpC::L, &|p| {
-        p.ol  = (p.dc & 0xffff) as i16 as i64 as u64
+        p.ex.ol  = (p.dc.dc & 0xffff) as i16 as i64 as u64
      }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
@@ -268,19 +258,19 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Sign-extends the contents of a word specified by the address (in the 64-bit mode) and loads the result to register rt.
     &(Op::Lw, "lw", OpC::L, &|p| {
-        p.ol  = p.dc as i32 as i64 as u64
+        p.ex.ol  = p.dc.dc as i32 as i64 as u64
     }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Zero-extends the contents of a byte specified by the address and loads the result to register rt.
     &(Op::Lbu, "lbu", OpC::L, &|p| {
-        p.ol  = (p.dc & 0xff) as u8 as u64
+        p.ex.ol  = (p.dc.dc & 0xff) as u8 as u64
     }),
 
     //Generates an address by adding a sign-extended offset to the contents of register base.
     // Zero-extends the contents of a halfword specified by the address and loads the result to register rt.
     &(Op::Lhu, "lhu", OpC::L, &|p| {
-        p.ol  = (p.dc & 0xffff) as u16 as u64
+        p.ex.ol  = (p.dc.dc & 0xffff) as u16 as u64
     }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
@@ -293,7 +283,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Zero-extends the contents of the word specified by the address, and loads the result to register rt.
     &(Op::Lwu, "lwu", OpC::L, &|p| {
-        p.ol  = p.dc as u32 as u64
+        p.ex.ol  = p.dc.dc as u32 as u64
     })],
 
     /* ROW: 5 */
@@ -301,13 +291,13 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Stores the contents of the low-order byte of register rt to the memory specified by the address.
     [&(Op::Sb, "sb", OpC::S, &|p| {
-        p.ol = (p.rt & 0xff) as u64
+        p.ex.ol = (p.rf.rt & 0xff) as u64
     }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Stores the contents of the low-order halfword of register rt to the memory specified by the address.
     &(Op::Sh, "sh", OpC::S, &|p| {
-        p.ol = (p.rt & 0xffff) as u64
+        p.ex.ol = (p.rf.rt & 0xffff) as u64
     }),
 
     // Generates an address by adding a sign-extended offset to the contents of register base.
@@ -320,7 +310,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     // Generates an address by adding a sign-extended offset to the contents of register base.
     // Stores the contents of the low-order word of register rt to the memory specified by the address.
     &(Op::Sw, "sw", OpC::S, &|p| {
-        p.ol = p.rt as u32 as u64
+        p.ex.ol = p.rf.rt as u32 as u64
     }),
 
     &(Op::Sdl, "sdl", OpC::S, &|p| {
@@ -404,7 +394,7 @@ pub const OP_TABLE: [[&OpTup; 8]; 8] = [
     })],
 ];
 
-/* A constant 2-d array of the opcode p.dcues. */
+/* A constant 2-d array of the opcode p.dc.dcues. */
 pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     /* ROW: 0 */
@@ -412,7 +402,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     // Shifts the contents of register rt sa bits to the left, and inserts 0 to the loworder bits.
     // Sign-extends (in the 64-bit mode) the 32-bit result and stores it to register rd.
     [&(Op::Sll, "sll", OpC::R, &|p| {
-        p.ol = ((p.rt as u32) << p.op.sa()) as i32 as i64 as u64
+        p.ex.ol = ((p.rf.rt as u32) << p.ic.op.sa()) as i32 as i64 as u64
     }),
 
     &RESERVED,
@@ -420,7 +410,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     // Shifts the contents of register rt sa bits to the right, and inserts 0 to the highorder bits.
     // Sign-extends (in the 64-bit mode) the 32-bit result and stores it to register rd.
     &(Op::Srl, "srl", OpC::R, &|p| {
-        p.ol = ((p.rt as u32) >> p.op.sa()) as i32 as i64 as u64
+        p.ex.ol = ((p.rf.rt as u32) >> p.ic.op.sa()) as i32 as i64 as u64
     }),
 
     &(Op::Sra, "sra", OpC::R, &|p| {
@@ -445,16 +435,14 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // Jumps to the address of register rs, delayed by one instruction.
     [&(Op::Jr, "jr", OpC::J, &|p| {
-        p.ol = p.rs;
-        p.ds = true;
+        p.ex.ol = p.rf.rs;
     }),
 
     // Jumps to the address of register rs, delayed by one instruction.
     // Stores the address of the instruction following the delay slot to register rd.
     &(Op::Jalr, "jalr", OpC::J, &|p| {
-        p.ol = p.rs;
-        p.wlr = true;
-        p.ds = true;
+        p.ex.ol = p.rf.rs;
+        p.ex.wlr = true;
     }),
 
     &RESERVED,
@@ -547,7 +535,7 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     // Adds the contents of register rs and rt, and stores (sign-extends in the 64-bit mode) the 32-bit result to register rd.
     // Generates an exception if an integer overflow occurs.
     [&(Op::Add, "add", OpC::R, &|p| {
-        p.ol = p.rs + p.rt
+        p.ex.ol = p.rf.rs + p.rf.rt
     }),
 
     &(Op::Addu, "addu", OpC::R, &|p| {
@@ -564,22 +552,22 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
 
     // ANDs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::And, "and", OpC::R, &|p| {
-        p.ol = p.rs & p.rt
+        p.ex.ol = p.rf.rs & p.rf.rt
     }),
 
     // ORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Or, "or", OpC::R, &|p| {
-        p.ol = p.rs | p.rt
+        p.ex.ol = p.rf.rs | p.rf.rt
     }),
 
     // Exclusive-ORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Xor, "xor", OpC::R, &|p| {
-        p.ol = p.rs ^ p.rt
+        p.ex.ol = p.rf.rs ^ p.rf.rt
     }),
 
     // NORs the contents of registers rs and rt in bit units, and stores the result to register rd.
     &(Op::Nor, "nor", OpC::R, &|p| {
-        p.ol = !(p.rs | p.rt)
+        p.ex.ol = !(p.rf.rs | p.rf.rt)
     })],
 
     /* ROW: 5 */
@@ -673,31 +661,27 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     })],
 ];
 
-/* A constant 2-d array of the opcode p.dcues. , _*/
+/* A constant 2-d array of the opcode p.dc.dcues. , _*/
 pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
     [&(Op::Bltz, "bltz", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
     }),
 
     &(Op::Bgez, "bgez", OpC::B, &|p| {
-        p.br = if (p.rs as i64) >= 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) >= 0 { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    // Branches to the branch address if register p.rf.rs is less than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bltzl, "bltzl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
     }),
 
-    // Branches to the branch address if register p.rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
+    // Branches to the branch address if register p.rf.rs is greater than 0. If the branch condition is not satisfied, the instruction in the branch delay slot is discarded.
     &(Op::Bgezl, "bgezl", OpC::B, &|p| {
-        p.br = if (p.rs as i64) > 0 { true } else { false };
-        p.ds = true;
+        p.ex.br = if (p.rf.rs as i64) > 0 { true } else { false };
     }),
 
     &RESERVED,
@@ -738,27 +722,23 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
     /* ROW: 2 */
 
     [&(Op::Bltzal, "bltzal", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
-        p.wlr = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
+        p.ex.wlr = true;
     }),
 
     &(Op::Bgezal, "bgezal", OpC::B, &|p| {
-        p.br = if (p.rs as i64) >= 0 { true } else { false };
-        p.ds = true;
-        p.wlr = true;
+        p.ex.br = if (p.rf.rs as i64) >= 0 { true } else { false };
+        p.ex.wlr = true;
     }),
 
     &(Op::Bltzall, "bltzall", OpC::B, &|p| {
-        p.br = if (p.rs as i64) < 0 { true } else { false };
-        p.ds = true;
-        p.wlr = true;
+        p.ex.br = if (p.rf.rs as i64) < 0 { true } else { false };
+        p.ex.wlr = true;
         unimplemented!()
     }),
 
     &(Op::Bgezall, "bgezall", OpC::B, &|p| {
-        p.ds = true;
-        p.wlr = true;
+        p.ex.wlr = true;
         unimplemented!()
     }),
 
@@ -779,14 +759,14 @@ pub const RI_OP_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode p.dcues. */
+/* A constant 2-d array of the opcode p.dc.dcues. */
 pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
 
     // Loads the contents of the word of the general purpose register rd of CP0 to the general purpose register rt of the CPU.
     [&(Op::Mf, "mf", OpC::C, &|p| {
-        p.ol = p.rs
+        p.ex.ol = p.rf.rs
     }),
 
     // Loads the contents of the doubleword of the general purpose register rd of CP0 to the general purpose register rt of the CPU.
@@ -802,7 +782,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
 
     // Loads the contents of the word of the general purpose register rt of the CPU to the general purpose register rd of CP0.
     &(Op::Mt, "mt", OpC::C, &|p| {
-        p.ol = p.rt
+        p.ex.ol = p.rf.rt
     }),
 
     // Loads the contents of the doubleword of the general purpose register rt of the CPU to the general purpose register rd of CP0.
@@ -819,7 +799,6 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
     /* ROW: 4 */
 
     [&(Op::Bc, "bc", OpC::C, &|p| {
-        p.ds = true;
         unimplemented!()
     }),
 
@@ -857,7 +836,7 @@ pub const COP_OP_RS_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode p.dcues. */
+/* A constant 2-d array of the opcode p.dc.dcues. */
 pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */
@@ -917,7 +896,7 @@ pub const COP_OP_RT_TABLE: [[&OpTup; 8]; 4] = [
     &RESERVED],
 ];
 
-/* A constant 2-d array of the opcode p.dcues. */
+/* A constant 2-d array of the opcode p.dc.dcues. */
 pub const COP_OP_FN_TABLE: [[&OpTup; 8]; 4] = [
 
     /* ROW: 0 */

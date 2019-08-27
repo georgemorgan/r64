@@ -44,7 +44,7 @@ const GPR_SIZE: usize = 32;
 pub struct VR4300 {
 
     /* 5 stage pipeline */
-    pipeline: Pipeline,
+    pl: Pl,
 
     /* mmu / tlb co-processor */
     pub cp0: CP0,
@@ -56,6 +56,8 @@ pub struct VR4300 {
     pub hi: u64,
     pub lo: u64,
     pub ll: u8,
+
+    pub pc: u64
 }
 
 impl VR4300 {
@@ -63,7 +65,7 @@ impl VR4300 {
     pub fn new(pc: u64) -> VR4300 {
         VR4300 {
 
-            pipeline: Pipeline::new(pc),
+            pl: Pl::new(),
 
             cp0: CP0::new(),
             cp1: CP1::new(),
@@ -73,6 +75,8 @@ impl VR4300 {
             hi: 0,
             lo: 0,
             ll: 0,
+
+            pc: pc
         }
     }
 
@@ -90,16 +94,8 @@ impl VR4300 {
         }
     }
 
-    pub fn exec(&mut self, mc: &mut MC) {
-        pipeline::ic(self, mc);
-        pipeline::rf(self);
-        pipeline::ex(self);
-        pipeline::dc(self, mc);
-        pipeline::wb(self, mc);
-    }
-
     pub fn cycle(&mut self, mc: &mut MC) {
-        self.exec(mc);
+        pipeline::clock(self, mc);
     }
 }
 

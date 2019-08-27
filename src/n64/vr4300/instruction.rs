@@ -4,6 +4,7 @@ use std::fmt;
 
 use super::*;
 
+#[derive(Copy, Clone)]
 pub struct Inst(pub u32);
 
 impl Inst {

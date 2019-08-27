@@ -1,177 +1,213 @@
 use super::*;
 
-pub struct Pipeline {
+enum PlStage {
+    IC,
+    RF,
+    EX,
+    DC,
+    WB
+}
 
-    pc: u64,
+#[derive(Copy, Clone)]
+pub struct Ic {
+    pub op: Inst
+}
 
-    /* IC */
-    pub op: Inst,
-
-    /* RF */
+#[derive(Copy, Clone)]
+pub struct Rf {
+    /* RF stage */
     pub rt: u64,
-    pub rs: u64,
+    pub rs: u64
+}
 
-    /* EX */
+#[derive(Copy, Clone)]
+pub struct Ex {
+    /* EX stage */
     pub ol: u64,
     pub br: bool,
-    pub wlr: bool,
+    pub wlr: bool
+}
 
-    /* DC */
-    pub dc: u64,
+#[derive(Copy, Clone)]
+pub struct Dc {
+    pub dc: u64
+}
 
-    /* delay slot */
-    pub ds: bool,
-    dswlr: bool,
-    dsol: u64
+#[derive(Copy, Clone)]
+pub struct Wb {
 
 }
 
-impl Pipeline {
+#[derive(Copy, Clone)]
+pub struct Pls {
+    pub ic : Ic,
+    pub rf: Rf,
+    pub ex: Ex,
+    pub dc: Dc,
+    pub wb: Wb
+}
 
-    pub fn new(pc: u64) -> Pipeline {
-        Pipeline {
+impl Pls {
+    pub fn new() -> Pls {
+        Pls {
+            /* IC stage */
+            ic: Ic {
+                op: Inst(0)
+            },
 
-            pc: pc,
+            /* RF stage */
+            rf: Rf {
+                rt: 0,
+                rs: 0
+            },
 
-            op: Inst(0),
+            /* EX stage */
+            ex: Ex {
+                ol: 0,
+                br: false,
+                wlr: false
+            },
 
-            rt: 0,
-            rs: 0,
+            /* DC stage */
+            dc: Dc {
+                dc: 0
+            },
 
-            ol: 0,
-            br: false,
-            wlr: false,
+            /* WB stage */
+            wb: Wb {
 
-            dc: 0,
-
-            ds: false,
-            dswlr: false,
-            dsol: 0,
-
+            }
         }
     }
+}
 
+pub struct Pl {
+    /* pipeline stage */
+    st: [Pls; 5]
+}
+
+impl Pl {
+    pub fn new() -> Pl {
+        Pl {
+            st: [Pls::new(); 5]
+        }
+    }
 }
 
 /* IC - Instruction Cache Fetch */
-pub fn ic(cpu: &mut VR4300, mc: &MC) {
+pub fn ic(i: usize, cpu: &mut VR4300, mc: &MC) {
 
-    let val = mc.read(cpu.pipeline.pc as u32);
-    cpu.pipeline.op = Inst(val);
-    //println!("{:#x}: ({:#x}) {}", cpu.pipeline.pc, val, cpu.pipeline.op);
+    let val = mc.read(cpu.pc as u32);
+    cpu.pl.st[i].ic.op = Inst(val);
+    println!("IC - {:#x}: ({:#x}) {}", cpu.pc, val, cpu.pl.st[i].ic.op);
 }
 
 /* RF - Register Fetch */
-pub fn rf(cpu: &mut VR4300) {
+pub fn rf(i: usize, cpu: &mut VR4300) {
 
-    cpu.pipeline.pc += 4;
+    cpu.pc += 4;
 
-    match cpu.pipeline.op.class() {
+    match cpu.pl.st[i].ic.op.class() {
         OpC::C => {
-            cpu.pipeline.rs = cpu.cp0.rgpr(cpu.pipeline.op._rd()) as u64
+            cpu.pl.st[i].rf.rs = cpu.cp0.rgpr(cpu.pl.st[i].ic.op._rd()) as u64
         }, _ => {
-            cpu.pipeline.rs = cpu.rgpr(cpu.pipeline.op._rs());
+            cpu.pl.st[i].rf.rs = cpu.rgpr(cpu.pl.st[i].ic.op._rs());
         }
     }
 
-    cpu.pipeline.rt = cpu.rgpr(cpu.pipeline.op._rt());
+    cpu.pl.st[i].rf.rt = cpu.rgpr(cpu.pl.st[i].ic.op._rt());
+
+    println!("RF - {}", cpu.pl.st[i].ic.op);
 }
 
 /* EX - Execution */
-pub fn ex(cpu: &mut VR4300) {
+pub fn ex(i: usize, cpu: &mut VR4300) {
 
-    match cpu.pipeline.op.op() {
+    match cpu.pl.st[i].ic.op.op() {
         Op::Syscall => {
-            if cpu.pipeline.op.sa() > 0 {
-                let result = if cpu.pipeline.op._rt() == 16 { "Pass" }  else { "Fail" };
-                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pipeline.op._rs(), cpu.pipeline.op._rd(), cpu.pipeline.op.sa(), result);
+            if cpu.pl.st[i].ic.op.sa() > 0 {
+                let result = if cpu.pl.st[i].ic.op._rt() == 16 { "Pass" }  else { "Fail" };
+                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pl.st[i].ic.op._rs(), cpu.pl.st[i].ic.op._rd(), cpu.pl.st[i].ic.op.sa(), result);
             }
         }, _ => {
-            match cpu.pipeline.op.class() {
+            match cpu.pl.st[i].ic.op.class() {
                 OpC::L => {
 
                 }, OpC::C => {
 
                 }, OpC::B => {
-                    cpu.pipeline.op.ex()(&mut cpu.pipeline);
+                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
 
-                    if cpu.pipeline.br {
-                        let offset = ((cpu.pipeline.op.offset() as i16 as i32) << 2) as i64;
-                        cpu.pipeline.ol = (cpu.pipeline.pc as i64 + offset) as u64;
+                    if cpu.pl.st[i].ex.br {
+                        let offset = ((cpu.pl.st[i].ic.op.offset() as i16 as i32) << 2) as i64;
+                        cpu.pl.st[i].ex.ol = (cpu.pc as i64 + offset) as u64;
                     }
 
                 }, _ => {
-                    cpu.pipeline.op.ex()(&mut cpu.pipeline);
+                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
                 }
             }
         }
     }
+
+    println!("EX - {}", cpu.pl.st[i].ic.op);
 }
 
 /* DC - Data Cache Fetch */
-pub fn dc(cpu: &mut VR4300, mc: &mut MC) {
+pub fn dc(i: usize, cpu: &mut VR4300, mc: &MC) {
 
-    match cpu.pipeline.op.class() {
+    match cpu.pl.st[i].ic.op.class() {
         OpC::L => {
-            let base = cpu.pipeline.rs as i64;
-            let offset = cpu.pipeline.op.offset() as i16 as i64;
-            cpu.pipeline.dc = mc.read((base + offset) as u32) as u64;
+            let base = cpu.pl.st[i].rf.rs as i64;
+            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
+            cpu.pl.st[i].dc.dc = mc.read((base + offset) as u32) as u64;
             /* need to call the ex function as a hack to get ol populated */
-            cpu.pipeline.op.ex()(&mut cpu.pipeline);
+            cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
         }, _ => {
 
         }
     }
+
+    println!("DC - {}", cpu.pl.st[i].ic.op);
 }
 
 /* WB - Write Back */
-pub fn wb(cpu: &mut VR4300, mc: &mut MC) {
+pub fn wb(i: usize, cpu: &mut VR4300, mc: &mut MC) {
 
-    if cpu.pipeline.dsol > 0 {
-        if cpu.pipeline.dswlr {
-            cpu.wgpr(cpu.pipeline.pc, 31);
-        }
-        cpu.pipeline.pc = cpu.pipeline.dsol;
-
-        cpu.pipeline.dswlr = false;
-        cpu.pipeline.dsol = 0;
-    }
-
-    if cpu.pipeline.ds {
-        cpu.pipeline.dswlr = cpu.pipeline.wlr;
-        cpu.pipeline.dsol = cpu.pipeline.ol;
-    }
-
-    match cpu.pipeline.op.class() {
+    match cpu.pl.st[i].ic.op.class() {
         OpC::S => {
-            let base = cpu.pipeline.rs as i64;
-            let offset = cpu.pipeline.op.offset() as i16 as i64;
-            mc.write((base + offset) as u64 as u32, cpu.pipeline.ol as u32);
+            let base = cpu.pl.st[i].rf.rs as i64;
+            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
+            mc.write((base + offset) as u64 as u32, cpu.pl.st[i].ex.ol as u32);
         }, OpC::C => {
             /* write back to rt on the coprocessor */
-            cpu.cp0.wgpr(cpu.pipeline.ol as u32, cpu.pipeline.op._rt());
+            cpu.cp0.wgpr(cpu.pl.st[i].ex.ol as u32, cpu.pl.st[i].ic.op._rt());
         }, OpC::B => {
-            /* invalidate the instruction in the delay slot if the branch is not taken */
-            if !cpu.pipeline.br {
-                cpu.pipeline.dswlr = false;
-                cpu.pipeline.dsol = 0;
-            }
-            else if !cpu.pipeline.ds
-            {
-                cpu.pipeline.pc = cpu.pipeline.ol;
-            }
+            cpu.pc = cpu.pl.st[i].ex.ol;
         }, OpC::J => {
             // nop
         }, OpC::L | OpC::I => {
             /* write back to rt */
-            cpu.wgpr(cpu.pipeline.ol, cpu.pipeline.op._rt());
+            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rt());
         }, OpC::R => {
             /* write back to rd */
-            cpu.wgpr(cpu.pipeline.ol, cpu.pipeline.op._rd());
+            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rd());
         }
     }
 
-    cpu.pipeline.ds = false;
-    cpu.pipeline.wlr = false;
+    println!("WB - {}", cpu.pl.st[i].ic.op);
+}
 
+pub fn clock(cpu: &mut VR4300, mc: &mut MC) {
+    ic(0, cpu, mc);
+    rf(1, cpu);
+    ex(2, cpu);
+    dc(3, cpu, mc);
+    wb(4, cpu, mc);
+
+    cpu.pl.st[4] = cpu.pl.st[3];
+    cpu.pl.st[3] = cpu.pl.st[2];
+    cpu.pl.st[2] = cpu.pl.st[1];
+    cpu.pl.st[1] = cpu.pl.st[0];
+    cpu.pl.st[0] = Pls::new();
 }
