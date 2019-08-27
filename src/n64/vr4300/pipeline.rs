@@ -1,11 +1,12 @@
 use super::*;
 
-enum PlStage {
-    IC,
-    RF,
-    EX,
-    DC,
-    WB
+#[derive(Copy, Clone)]
+pub enum PlStage {
+    IC = 0,
+    RF = 1,
+    EX = 2,
+    DC = 3,
+    WB = 4
 }
 
 #[derive(Copy, Clone)]
@@ -95,115 +96,115 @@ impl Pl {
 }
 
 /* IC - Instruction Cache Fetch */
-pub fn ic(i: usize, cpu: &mut VR4300, mc: &MC) {
+pub fn ic(i: PlStage, cpu: &mut VR4300, mc: &MC) {
 
     let val = mc.read(cpu.pc as u32);
-    cpu.pl.st[i].ic.op = Inst(val);
-    println!("IC - {:#x}: ({:#x}) {}", cpu.pc, val, cpu.pl.st[i].ic.op);
+    cpu.pl.st[i as usize].ic.op = Inst(val);
+    println!("IC - {:#x}: ({:#x}) {}", cpu.pc, val, cpu.pl.st[i as usize].ic.op);
 }
 
 /* RF - Register Fetch */
-pub fn rf(i: usize, cpu: &mut VR4300) {
+pub fn rf(i: PlStage, cpu: &mut VR4300) {
 
     cpu.pc += 4;
 
-    match cpu.pl.st[i].ic.op.class() {
+    match cpu.pl.st[i as usize].ic.op.class() {
         OpC::C => {
-            cpu.pl.st[i].rf.rs = cpu.cp0.rgpr(cpu.pl.st[i].ic.op._rd()) as u64
+            cpu.pl.st[i as usize].rf.rs = cpu.cp0.rgpr(cpu.pl.st[i as usize].ic.op._rd()) as u64
         }, _ => {
-            cpu.pl.st[i].rf.rs = cpu.rgpr(cpu.pl.st[i].ic.op._rs());
+            cpu.pl.st[i as usize].rf.rs = cpu.rgpr(cpu.pl.st[i as usize].ic.op._rs());
         }
     }
 
-    cpu.pl.st[i].rf.rt = cpu.rgpr(cpu.pl.st[i].ic.op._rt());
+    cpu.pl.st[i as usize].rf.rt = cpu.rgpr(cpu.pl.st[i as usize].ic.op._rt());
 
-    println!("RF - {}", cpu.pl.st[i].ic.op);
+    println!("RF - {}", cpu.pl.st[i as usize].ic.op);
 }
 
 /* EX - Execution */
-pub fn ex(i: usize, cpu: &mut VR4300) {
+pub fn ex(i: PlStage, cpu: &mut VR4300) {
 
-    match cpu.pl.st[i].ic.op.op() {
+    match cpu.pl.st[i as usize].ic.op.op() {
         Op::Syscall => {
-            if cpu.pl.st[i].ic.op.sa() > 0 {
-                let result = if cpu.pl.st[i].ic.op._rt() == 16 { "Pass" }  else { "Fail" };
-                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pl.st[i].ic.op._rs(), cpu.pl.st[i].ic.op._rd(), cpu.pl.st[i].ic.op.sa(), result);
+            if cpu.pl.st[i as usize].ic.op.sa() > 0 {
+                let result = if cpu.pl.st[i as usize].ic.op._rt() == 16 { "Pass" }  else { "Fail" };
+                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pl.st[i as usize].ic.op._rs(), cpu.pl.st[i as usize].ic.op._rd(), cpu.pl.st[i as usize].ic.op.sa(), result);
             }
         }, _ => {
-            match cpu.pl.st[i].ic.op.class() {
+            match cpu.pl.st[i as usize].ic.op.class() {
                 OpC::L => {
 
                 }, OpC::C => {
 
                 }, OpC::B => {
-                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+                    cpu.pl.st[i as usize].ic.op.ex()(&mut cpu.pl.st[i as usize]);
 
-                    if cpu.pl.st[i].ex.br {
-                        let offset = ((cpu.pl.st[i].ic.op.offset() as i16 as i32) << 2) as i64;
-                        cpu.pl.st[i].ex.ol = (cpu.pc as i64 + offset) as u64;
+                    if cpu.pl.st[i as usize].ex.br {
+                        let offset = ((cpu.pl.st[i as usize].ic.op.offset() as i16 as i32) << 2) as i64;
+                        cpu.pl.st[i as usize].ex.ol = (cpu.pc as i64 + offset) as u64;
                     }
 
                 }, _ => {
-                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+                    cpu.pl.st[i as usize].ic.op.ex()(&mut cpu.pl.st[i as usize]);
                 }
             }
         }
     }
 
-    println!("EX - {}", cpu.pl.st[i].ic.op);
+    println!("EX - {}", cpu.pl.st[i as usize].ic.op);
 }
 
 /* DC - Data Cache Fetch */
-pub fn dc(i: usize, cpu: &mut VR4300, mc: &MC) {
+pub fn dc(i: PlStage, cpu: &mut VR4300, mc: &MC) {
 
-    match cpu.pl.st[i].ic.op.class() {
+    match cpu.pl.st[i as usize].ic.op.class() {
         OpC::L => {
-            let base = cpu.pl.st[i].rf.rs as i64;
-            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
-            cpu.pl.st[i].dc.dc = mc.read((base + offset) as u32) as u64;
+            let base = cpu.pl.st[i as usize].rf.rs as i64;
+            let offset = cpu.pl.st[i as usize].ic.op.offset() as i16 as i64;
+            cpu.pl.st[i as usize].dc.dc = mc.read((base + offset) as u32) as u64;
             /* need to call the ex function as a hack to get ol populated */
-            cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+            cpu.pl.st[i as usize].ic.op.ex()(&mut cpu.pl.st[i as usize]);
         }, _ => {
 
         }
     }
 
-    println!("DC - {}", cpu.pl.st[i].ic.op);
+    println!("DC - {}", cpu.pl.st[i as usize].ic.op);
 }
 
 /* WB - Write Back */
-pub fn wb(i: usize, cpu: &mut VR4300, mc: &mut MC) {
+pub fn wb(i: PlStage, cpu: &mut VR4300, mc: &mut MC) {
 
-    match cpu.pl.st[i].ic.op.class() {
+    match cpu.pl.st[i as usize].ic.op.class() {
         OpC::S => {
-            let base = cpu.pl.st[i].rf.rs as i64;
-            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
-            mc.write((base + offset) as u64 as u32, cpu.pl.st[i].ex.ol as u32);
+            let base = cpu.pl.st[i as usize].rf.rs as i64;
+            let offset = cpu.pl.st[i as usize].ic.op.offset() as i16 as i64;
+            mc.write((base + offset) as u64 as u32, cpu.pl.st[i as usize].ex.ol as u32);
         }, OpC::C => {
             /* write back to rt on the coprocessor */
-            cpu.cp0.wgpr(cpu.pl.st[i].ex.ol as u32, cpu.pl.st[i].ic.op._rt());
+            cpu.cp0.wgpr(cpu.pl.st[i as usize].ex.ol as u32, cpu.pl.st[i as usize].ic.op._rt());
         }, OpC::B => {
-            cpu.pc = cpu.pl.st[i].ex.ol;
+            cpu.pc = cpu.pl.st[i as usize].ex.ol;
         }, OpC::J => {
             // nop
         }, OpC::L | OpC::I => {
             /* write back to rt */
-            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rt());
+            cpu.wgpr(cpu.pl.st[i as usize].ex.ol, cpu.pl.st[i as usize].ic.op._rt());
         }, OpC::R => {
             /* write back to rd */
-            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rd());
+            cpu.wgpr(cpu.pl.st[i as usize].ex.ol, cpu.pl.st[i as usize].ic.op._rd());
         }
     }
 
-    println!("WB - {}", cpu.pl.st[i].ic.op);
+    println!("WB - {}", cpu.pl.st[i as usize].ic.op);
 }
 
 pub fn clock(cpu: &mut VR4300, mc: &mut MC) {
-    ic(0, cpu, mc);
-    rf(1, cpu);
-    ex(2, cpu);
-    dc(3, cpu, mc);
-    wb(4, cpu, mc);
+    ic(PlStage::IC, cpu, mc);
+    rf(PlStage::RF, cpu);
+    ex(PlStage::EX, cpu);
+    dc(PlStage::DC, cpu, mc);
+    wb(PlStage::WB, cpu, mc);
 
     cpu.pl.st[4] = cpu.pl.st[3];
     cpu.pl.st[3] = cpu.pl.st[2];
