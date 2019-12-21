@@ -24,6 +24,7 @@ pub struct Rf {
 #[derive(Copy, Clone)]
 pub struct Ex {
     /* EX stage */
+    pub stalled: bool,
     pub ol: u64,
     pub br: bool,
     pub wlr: bool
@@ -71,6 +72,7 @@ impl Pls {
 
             /* EX stage */
             ex: Ex {
+                stalled: false,
                 ol: 0,
                 br: false,
                 wlr: false
@@ -117,7 +119,7 @@ impl Pl {
 }
 
 /* IC - Instruction Cache Fetch */
-pub fn ic(i: usize, cpu: &mut VR4300, mc: &MC) {
+pub fn ic(cpu: &mut VR4300, mc: &MC) {
 
     /* if there is a branch waiting in the delay slot, we need to update the PC here */
     if cpu.pl.ds_pc != 0 {
@@ -125,65 +127,77 @@ pub fn ic(i: usize, cpu: &mut VR4300, mc: &MC) {
         cpu.pl.ds_pc = 0;
     }
 
-    let val = mc.read((cpu.pc + (4*i as u64)) as u32);
-    cpu.pl.st[i].ic.op = Inst(val);
+    let val = mc.read((cpu.pc) as u32);
+    cpu.pl.st[4].ic.op = Inst(val);
 
-    /* go to the rf stage */
-    cpu.pl.st[i].st = 1;
+    println!("IC {}", cpu.pl.st[4].ic.op);
+
+    cpu.pl.st[3] = cpu.pl.st[4]; // IC -> RF
 }
 
 /* RF - Register Fetch */
-pub fn rf(i: usize, cpu: &mut VR4300) {
+pub fn rf(cpu: &mut VR4300) {
 
-    // match cpu.pl.st[i - 1].ic.op.class() {
-    //     OpC::L | OpC::S => {
-    //         /* interlock until the load delay slot is written back */
-    //         if cpu.pl.st[i - 1].rf.rt == cpu.pl.st[i].rf.rt {
-    //             cpu.pl.st[i].interlock = true;
-    //             return;
-    //         }
-    //     }, _ => {
-    //
-    //     }
-    // }
+    println!("RF {}", cpu.pl.st[3].ic.op);
 
     cpu.pc += 4;
 
-    match cpu.pl.st[i].ic.op.class() {
+    match cpu.pl.st[3].ic.op.class() {
         OpC::C => {
-            cpu.pl.st[i].rf.rs = cpu.cp0.rgpr(cpu.pl.st[i].ic.op._rd()) as u64
+            cpu.pl.st[3].rf.rs = cpu.cp0.rgpr(cpu.pl.st[3].ic.op._rd()) as u64
         }, _ => {
-            cpu.pl.st[i].rf.rs = cpu.rgpr(cpu.pl.st[i].ic.op._rs());
+            cpu.pl.st[3].rf.rs = cpu.rgpr(cpu.pl.st[3].ic.op._rs());
         }
     }
 
-    cpu.pl.st[i].rf.rt = cpu.rgpr(cpu.pl.st[i].ic.op._rt());
+    cpu.pl.st[3].rf.rt = cpu.rgpr(cpu.pl.st[3].ic.op._rt());
 
-    /* go to the ex stage */
-    cpu.pl.st[i].st = 2;
+    cpu.pl.st[2] = cpu.pl.st[3]; // RF -> EX
 }
 
 /* EX - Execution */
-pub fn ex(i: usize, cpu: &mut VR4300) {
+pub fn ex(cpu: &mut VR4300) {
 
-    match cpu.pl.st[i].ic.op.op() {
+    println!("EX {}", cpu.pl.st[2].ic.op);
+
+    /* stall if the register is the dest of the RF instruction */
+    match cpu.pl.st[1].ic.op.class() {
+
+        OpC::I | OpC::L => {
+            if cpu.pl.st[2].ic.op._rs() == cpu.pl.st[3].ic.op._rt() || cpu.pl.st[2].ic.op._rt() == cpu.pl.st[3].ic.op._rt() {
+                cpu.pl.st[2].ex.stalled = true;
+                cpu.pl.st[1] = Pls::new();
+                return;
+            }
+        }, OpC::R => {
+            if cpu.pl.st[2].ic.op._rs() == cpu.pl.st[3].ic.op._rd() || cpu.pl.st[2].ic.op._rt() == cpu.pl.st[3].ic.op._rd() {
+                cpu.pl.st[2].ex.stalled = true;
+                cpu.pl.st[1] = Pls::new();
+                return;
+            }
+        } _=> {
+
+        }
+    }
+
+    match cpu.pl.st[2].ic.op.op() {
         Op::Syscall => {
-            if cpu.pl.st[i].ic.op.sa() > 0 {
-                let result = if cpu.pl.st[i].ic.op._rt() == 16 { "Pass" }  else { "Fail" };
-                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pl.st[i].ic.op._rs(), cpu.pl.st[i].ic.op._rd(), cpu.pl.st[i].ic.op.sa(), result);
+            if cpu.pl.st[2].ic.op.sa() > 0 {
+                let result = if cpu.pl.st[2].ic.op._rt() == 16 { "Pass" }  else { "Fail" };
+                println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", cpu.pl.st[2].ic.op._rs(), cpu.pl.st[2].ic.op._rd(), cpu.pl.st[2].ic.op.sa(), result);
             }
         }, _ => {
-            match cpu.pl.st[i].ic.op.class() {
+            match cpu.pl.st[2].ic.op.class() {
                 OpC::L => {
 
                 }, OpC::C => {
 
                 }, OpC::B => {
-                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+                    cpu.pl.st[2].ic.op.ex()(&mut cpu.pl.st[2]);
 
                     /* if a branch will occur, set the delay slot program counter */
-                    if cpu.pl.st[i].ex.br {
-                        let offset = ((cpu.pl.st[i].ic.op.offset() as i16 as i32) << 2) as i64;
+                    if cpu.pl.st[2].ex.br {
+                        let offset = ((cpu.pl.st[2].ic.op.offset() as i16 as i32) << 2) as i64;
                         cpu.pl.ds_pc = (cpu.pc as i64 + offset) as u64;
                     }
 
@@ -191,113 +205,88 @@ pub fn ex(i: usize, cpu: &mut VR4300) {
 
 
                 }, _ => {
-                    cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+                    cpu.pl.st[2].ic.op.ex()(&mut cpu.pl.st[2]);
                 }
             }
         }
     }
 
-    /* go to the dc stage */
-    cpu.pl.st[i].st = 3;
+    cpu.pl.st[1] = cpu.pl.st[2];
 }
 
 /* DC - Data Cache Fetch */
-pub fn dc(i: usize, cpu: &mut VR4300, mc: &MC) {
+pub fn dc(cpu: &mut VR4300, mc: &MC) {
 
-    match cpu.pl.st[i].ic.op.class() {
+    println!("DC {}", cpu.pl.st[1].ic.op);
+
+    match cpu.pl.st[1].ic.op.class() {
         OpC::L => {
-            let base = cpu.pl.st[i].rf.rs as i64;
-            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
-            cpu.pl.st[i].dc.dc = mc.read((base + offset) as u32) as u64;
+            let base = cpu.pl.st[1].rf.rs as i64;
+            let offset = cpu.pl.st[1].ic.op.offset() as i16 as i64;
+            cpu.pl.st[1].dc.dc = mc.read((base + offset) as u32) as u64;
             /* need to call the ex function as a hack to get ol populated */
-            cpu.pl.st[i].ic.op.ex()(&mut cpu.pl.st[i]);
+            cpu.pl.st[1].ic.op.ex()(&mut cpu.pl.st[1]);
         }, _ => {
 
         }
     }
 
-    /* go to the wb stage */
-    cpu.pl.st[i].st = 4;
+    cpu.pl.st[0] = cpu.pl.st[1];
 }
 
 /* WB - Write Back */
-pub fn wb(i: usize, cpu: &mut VR4300, mc: &mut MC) {
+pub fn wb(cpu: &mut VR4300, mc: &mut MC) {
 
-    match cpu.pl.st[i].ic.op.class() {
+    println!("WB {}", cpu.pl.st[0].ic.op);
+
+    match cpu.pl.st[0].ic.op.class() {
 
         /* decode instruction types I, L, S, J, B, R, C for writeback */
 
         OpC::I | OpC::L => {
             /* I and L instructions write back to the rt register */
-            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rt());
+            cpu.wgpr(cpu.pl.st[0].ex.ol, cpu.pl.st[0].ic.op._rt());
         }, OpC::S => {
             /* S instructions write back to memory */
-            let base = cpu.pl.st[i].rf.rs as i64;
-            let offset = cpu.pl.st[i].ic.op.offset() as i16 as i64;
-            mc.write((base + offset) as u64 as u32, cpu.pl.st[i].ex.ol as u32);
+            let base = cpu.pl.st[0].rf.rs as i64;
+            let offset = cpu.pl.st[0].ic.op.offset() as i16 as i64;
+            mc.write((base + offset) as u64 as u32, cpu.pl.st[0].ex.ol as u32);
         }, OpC::J | OpC::B => {
             /* J and B instructions wrote to the delay slot program counter and link register */
-            if cpu.pl.st[i].ex.wlr {
+            if cpu.pl.st[0].ex.wlr {
                 cpu.wgpr(cpu.pc + 8, 31);
             }
         }, OpC::R => {
             /* write back to rd */
-            cpu.wgpr(cpu.pl.st[i].ex.ol, cpu.pl.st[i].ic.op._rd());
+            cpu.wgpr(cpu.pl.st[0].ex.ol, cpu.pl.st[0].ic.op._rd());
         }, OpC::C => {
             /* write back to rt on the coprocessor */
-            cpu.cp0.wgpr(cpu.pl.st[i].ex.ol as u32, cpu.pl.st[i].ic.op._rt());
+            cpu.cp0.wgpr(cpu.pl.st[0].ex.ol as u32, cpu.pl.st[0].ic.op._rt());
         }
     }
 
-    /* go to the ic stage */
-    cpu.pl.st[i].st = 0;
+    if cpu.pl.st[2].ex.stalled {
+        cpu.pl.st[2].ex.stalled = false;
+    }
+
+    cpu.pl.st[0] = Pls::new();
 }
 
 pub fn clock(cpu: &mut VR4300, mc: &mut MC) {
 
-    println!("{:?}", cpu.pl);
+    wb(cpu, mc);
+    dc(cpu, mc);
+    ex(cpu);
+    rf(cpu);
+    ic(cpu, mc);
 
-    /* run 5 pcycles per clock */
-    for i in 0..5 {
-        match cpu.pl.st[i].st {
-            0 => {
-                ic(i, cpu, mc);
-            }, 1 => {
-                rf(i, cpu);
-            }, 2 => {
-                ex(i, cpu);
-            }, 3 => {
-                dc(i, cpu, mc);
-            }, 4 => {
-                wb(i, cpu, mc);
-            } _ => {
-                panic!("invalid pipeline stage");
-            }
-        }
-    }
-
-    cpu.pl.pcycle += 5;
 }
 
 impl fmt::Debug for Pls {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        match self.st {
-            0 => {
-                try!(write!(f, "IC"));
-            }, 1 => {
-                try!(write!(f, "RF"));
-            }, 2 => {
-                try!(write!(f, "EX"));
-            }, 3 => {
-                try!(write!(f, "DC"));
-            }, 4 => {
-                try!(write!(f, "WB"));
-            }, _ => {
-                panic!("invalid stage");
-            }
-        }
+
 
         Ok(())
 
@@ -308,8 +297,36 @@ impl fmt::Debug for Pl {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        for i in 0..5 {
-            try!(writeln!(f, "{}: ({:?}) - {}", i, self.st[i], self.st[i].ic.op));
+        let mut i = 1;
+
+        for j in 0..5 {
+
+            try!(write!(f, "{0: <10}", self.st[j].ic.op));
+
+            for k in 0..5 {
+
+                match k {
+                    0 => {
+                        try!(write!(f, "IC"));
+                    }, 1 => {
+                        try!(write!(f, "RF"));
+                    }, 2 => {
+                        try!(write!(f, "EX"));
+                    }, 3 => {
+                        try!(write!(f, "DC"));
+                    }, 4 => {
+                        try!(write!(f, "WB"));
+                    }, _ => {
+                        panic!("invalid stage");
+                    }
+                }
+
+                try!(write!(f, " "));
+            }
+
+            try!(write!(f, "\n"));
+
+            i += 1;
         }
 
         Ok(())
