@@ -81,7 +81,7 @@ pub enum Op {
 
 use super::*;
 
-pub type OpF = &'static Fn(&mut Pls);
+pub type OpF = &'static Fn(&mut Pl);
 
 pub type OpTup = (Op, &'static str, OpC, OpF);
 
@@ -535,19 +535,23 @@ pub const SP_OP_TABLE: [[&OpTup; 8]; 8] = [
     // Adds the contents of register rs and rt, and stores (sign-extends in the 64-bit mode) the 32-bit result to register rd.
     // Generates an exception if an integer overflow occurs.
     [&(Op::Add, "add", OpC::R, &|p| {
-        p.ex.ol = p.rf.rs + p.rf.rt
+        p.ex.ol = ((p.rf.rs as u32) + (p.rf.rt as u32)) as u64
     }),
 
+    // Adds the contents of register rs and rt, and stores (sign-extends in the 64-bit mode) the 32-bit result to register rd.
+    // Does not generate an exception even if an integer overflow occurs.
     &(Op::Addu, "addu", OpC::R, &|p| {
-        unimplemented!()
+        p.ex.ol = ((p.rf.rs as u32) + (p.rf.rt as u32)) as u64
     }),
 
+    // Subtracts the contents of register rs from register rt, and stores (sign-extends in the 64-bit mode) the result to register rd.
+    // Generates an exception if an integer overflow occurs.
     &(Op::Sub, "sub", OpC::R, &|p| {
-        unimplemented!()
+        p.ex.ol = ((p.rf.rt as u32) - (p.rf.rs as u32)) as u64
     }),
 
     &(Op::Subu, "subu", OpC::R, &|p| {
-        unimplemented!()
+        p.ex.ol = ((p.rf.rt as u32) - (p.rf.rs as u32)) as u64
     }),
 
     // ANDs the contents of registers rs and rt in bit units, and stores the result to register rd.
