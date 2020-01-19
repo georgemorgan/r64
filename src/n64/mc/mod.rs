@@ -1,12 +1,3 @@
-use n64::vi::VI;
-use n64::ai::AI;
-use n64::mi::MI;
-use n64::ri::RI;
-use n64::pi::PI;
-use n64::rsp::RSP;
-use n64::rdp::RDP;
-use n64::pif::PIF;
-
 /* N64 memory sizes. */
 pub const N64_IRAM_SIZE: usize = 0x400000;
 
@@ -124,28 +115,6 @@ pub struct MC {
     iram: Box<[u8]>,
     /* Cartridge ROM. */
     crom: Box<[u8]>,
-
-    /* RCP-NUS */
-
-    /* Virtual VI. (Video Interface) */
-    vi: VI,
-    /* Virtual AI. (Audio Interface) */
-    ai: AI,
-    /* Virtual MI (MIPS Interface) */
-    mi: MI,
-    /* Virtual RI (RAM Interface) */
-    ri: RI,
-    /* Virtual PI. (Peripheral Interface) */
-    pi: PI,
-    /* Virtual RSP. (Reality Signal Processor) */
-    rsp: RSP,
-    /* Virtual RDP. (Reality Display Processor) */
-    rdp: RDP,
-
-    /* PIF-NUS */
-
-    /* Virtual PIF. */
-    pif: PIF,
 }
 
 impl MC {
@@ -156,18 +125,6 @@ impl MC {
             iram: vec![0; N64_IRAM_SIZE].into_boxed_slice(),
             /* Own of the CROM. */
             crom: cr,
-
-            /* RCP-NUS */
-            vi: VI::new(),
-            ai: AI::new(),
-            mi: MI::new(),
-            ri: RI::new(),
-            pi: PI::new(),
-            rsp: RSP::new(),
-            rdp: RDP::new(),
-
-            /* PIF-NUS */
-            pif: PIF::new(pr),
         }
     }
 
@@ -179,51 +136,51 @@ impl MC {
 
         /* Match the memory address to a peripheral address range. */
         match paddr {
-            RDRAM_MEM_START ... RDRAM_MEM_END => {
+            RDRAM_MEM_START ..= RDRAM_MEM_END => {
                 return rmem(paddr - RDRAM_MEM_START, &self.iram);
-            }, RDRAM_REG_START ... RDRAM_REG_END => {
+            }, RDRAM_REG_START ..= RDRAM_REG_END => {
                 unimplemented!()
-            }, SP_DMEM_START ... SP_DMEM_END => {
+            }, SP_DMEM_START ..= SP_DMEM_END => {
                 rmem(paddr - SP_DMEM_START, &self.rsp.dmem)
-            }, SP_IMEM_START ... SP_IMEM_END => {
+            }, SP_IMEM_START ..= SP_IMEM_END => {
                 rmem(paddr - SP_IMEM_START, &self.rsp.imem)
-            }, SP_REG_START ... SP_REG_END => {
+            }, SP_REG_START ..= SP_REG_END => {
                 self.rsp.rreg(paddr)
-            }, RDP_CMD_START ... RDP_CMD_END => {
+            }, RDP_CMD_START ..= RDP_CMD_END => {
                 self.rdp.dpc_rreg(paddr)
-            }, RDP_SPAN_START ... RDP_SPAN_END => {
+            }, RDP_SPAN_START ..= RDP_SPAN_END => {
                 self.rdp.dps_rreg(paddr)
-            }, MI_REG_START ... MI_REG_END => {
+            }, MI_REG_START ..= MI_REG_END => {
                 self.mi.rreg(paddr)
-            }, VI_REG_START ... VI_REG_END => {
+            }, VI_REG_START ..= VI_REG_END => {
                 self.vi.rreg(paddr)
-            }, AI_REG_START ... AI_REG_END => {
+            }, AI_REG_START ..= AI_REG_END => {
                 self.ai.rreg(paddr)
-            }, PI_REG_START ... PI_REG_END => {
+            }, PI_REG_START ..= PI_REG_END => {
                 self.pi.rreg(paddr)
-            }, RI_REG_START ... RI_REG_END => {
+            }, RI_REG_START ..= RI_REG_END => {
                 self.ri.rreg(paddr)
-            }, SI_REG_START ... SI_REG_END => {
+            }, SI_REG_START ..= SI_REG_END => {
                 self.pif.rreg(paddr)
-            }, UNUSED_START ... UNUSED_END => {
+            }, UNUSED_START ..= UNUSED_END => {
                 panic!("Attempt to read from unused address space.")
-            }, CART_DOM2_A1_START ... CART_DOM2_A1_END => {
+            }, CART_DOM2_A1_START ..= CART_DOM2_A1_END => {
                 rmem(paddr - CART_DOM2_A1_START, &self.crom)
-            }, CART_DOM1_A1_START ... CART_DOM1_A1_END => {
+            }, CART_DOM1_A1_START ..= CART_DOM1_A1_END => {
                 rmem(paddr - CART_DOM1_A1_START, &self.crom)
-            }, CART_DOM2_A2_START ... CART_DOM2_A2_END => {
+            }, CART_DOM2_A2_START ..= CART_DOM2_A2_END => {
                 rmem(paddr - CART_DOM2_A2_START, &self.crom)
-            }, CART_DOM1_A2_START ... CART_DOM1_A2_END => {
+            }, CART_DOM1_A2_START ..= CART_DOM1_A2_END => {
                 rmem(paddr - CART_DOM1_A2_START, &self.crom)
-            }, PIF_ROM_START ... PIF_ROM_END => {
+            }, PIF_ROM_START ..= PIF_ROM_END => {
                 rmem(paddr - PIF_ROM_START, &self.pif.prom)
-            }, PIF_RAM_START ... PIF_RAM_END => {
+            }, PIF_RAM_START ..= PIF_RAM_END => {
                 rmem(paddr - PIF_RAM_START, &self.pif.pram)
-            }, RESERVED_START ... RESERVED_END => {
+            }, RESERVED_START ..= RESERVED_END => {
                 panic!("Attempt to read from a reserved location address: {:#x}.", paddr)
-            }, CART_DOM1_A3_START ... CART_DOM1_A3_END => {
+            }, CART_DOM1_A3_START ..= CART_DOM1_A3_END => {
                 rmem(paddr - CART_DOM1_A3_START, &self.crom)
-            }, SYSAD_START ... SYSAD_END => {
+            }, SYSAD_START ..= SYSAD_END => {
                 unimplemented!()
             }, _ => panic!("Read from unrecognized physical address: {:#x}", paddr)
         }
@@ -237,47 +194,47 @@ impl MC {
 
         /* Match the memory address to a peripheral address range. */
         match paddr {
-            RDRAM_MEM_START ... RDRAM_MEM_END => {
+            RDRAM_MEM_START ..= RDRAM_MEM_END => {
                 wmem(paddr - RDRAM_MEM_START, value, &mut self.iram)
-            }, RDRAM_REG_START ... RDRAM_REG_END => {
+            }, RDRAM_REG_START ..= RDRAM_REG_END => {
                 unimplemented!()
-            }, SP_DMEM_START ... SP_DMEM_END => {
+            }, SP_DMEM_START ..= SP_DMEM_END => {
                 wmem(paddr - SP_DMEM_START, value, &mut self.rsp.dmem)
-            }, SP_IMEM_START ... SP_IMEM_END => {
+            }, SP_IMEM_START ..= SP_IMEM_END => {
                 wmem(paddr - SP_IMEM_START, value, &mut self.rsp.imem)
-            }, SP_REG_START ... SP_REG_END => {
+            }, SP_REG_START ..= SP_REG_END => {
                 self.rsp.wreg(paddr, value)
-            }, RDP_CMD_START ... RDP_CMD_END => {
+            }, RDP_CMD_START ..= RDP_CMD_END => {
                 self.rdp.dpc_wreg(paddr, value)
-            }, RDP_SPAN_START ... RDP_SPAN_END => {
+            }, RDP_SPAN_START ..= RDP_SPAN_END => {
                 self.rdp.dps_wreg(paddr, value)
-            }, MI_REG_START ... MI_REG_END => {
+            }, MI_REG_START ..= MI_REG_END => {
                 self.mi.wreg(paddr, value)
-            }, VI_REG_START ... VI_REG_END => {
+            }, VI_REG_START ..= VI_REG_END => {
                 self.vi.wreg(paddr, value)
-            }, AI_REG_START ... AI_REG_END => {
+            }, AI_REG_START ..= AI_REG_END => {
                 self.ai.wreg(paddr, value)
-            }, PI_REG_START ... PI_REG_END => {
+            }, PI_REG_START ..= PI_REG_END => {
                 self.pi.wreg(paddr, value)
-            }, RI_REG_START ... RI_REG_END => {
+            }, RI_REG_START ..= RI_REG_END => {
                 self.ri.wreg(paddr, value)
-            }, SI_REG_START ... SI_REG_END => {
+            }, SI_REG_START ..= SI_REG_END => {
                 self.pif.wreg(paddr, value)
-            }, UNUSED_START ... UNUSED_END => {
+            }, UNUSED_START ..= UNUSED_END => {
                 panic!("Attempt to write to unused address space.")
-            }, CART_DOM2_A1_START ... CART_DOM2_A1_END |
-               CART_DOM1_A1_START ... CART_DOM1_A1_END |
-               CART_DOM2_A2_START ... CART_DOM2_A2_END |
-               CART_DOM1_A2_START ... CART_DOM1_A2_END |
-               CART_DOM1_A3_START ... CART_DOM1_A3_END => {
+            }, CART_DOM2_A1_START ..= CART_DOM2_A1_END |
+               CART_DOM1_A1_START ..= CART_DOM1_A1_END |
+               CART_DOM2_A2_START ..= CART_DOM2_A2_END |
+               CART_DOM1_A2_START ..= CART_DOM1_A2_END |
+               CART_DOM1_A3_START ..= CART_DOM1_A3_END => {
                 panic!("Attempt to write to read-only cartridge memory address: {:#x}.", paddr)
-            }, PIF_ROM_START ... PIF_ROM_END => {
+            }, PIF_ROM_START ..= PIF_ROM_END => {
                 panic!("Attempt to write to a read-only PIF memory address: {:#x}.", paddr)
-            }, PIF_RAM_START ... PIF_RAM_END => {
+            }, PIF_RAM_START ..= PIF_RAM_END => {
                 wmem(paddr - PIF_RAM_START, value, &mut self.pif.pram)
-            }, RESERVED_START ... RESERVED_END => {
+            }, RESERVED_START ..= RESERVED_END => {
                 panic!("Attempt to write to a reserved location address: {:#x}.", paddr)
-            }, SYSAD_START ... SYSAD_END => {
+            }, SYSAD_START ..= SYSAD_END => {
                 unimplemented!()
             }, _ => panic!("Write to unrecognized physical address: address: {:#x}", paddr)
         }
@@ -306,10 +263,10 @@ fn wmem(addr: u32, val: u32, mem: &mut Box<[u8]>) {
 /* Convers a virtual address to a physical address. */
 fn vtop(vaddr: u32) -> u32 {
     match vaddr {
-        KSEG0_START ... KSEG0_END => {
+        KSEG0_START ..= KSEG0_END => {
             /* Direct mapped segment KSEG0. */
             vaddr - KSEG0_START
-        }, KSEG1_START ... KSEG1_END => {
+        }, KSEG1_START ..= KSEG1_END => {
             /* Direct mapped segment KSEG1. */
             vaddr - KSEG1_START
         }, _ => panic!("Unrecognized virtual address: address: {:#x}", vaddr)

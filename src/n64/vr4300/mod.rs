@@ -95,7 +95,11 @@ impl VR4300 {
     }
 
     pub fn cycle(&mut self, mc: &mut MC) {
-        pipeline::clock(self, mc);
+        self.pl.ic(mc);
+        self.pl.rf();
+        self.pl.ex();
+        self.pl.dc(mc);
+        self.pl.wb(mc);
     }
 }
 
