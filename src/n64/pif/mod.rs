@@ -1,5 +1,5 @@
-use n64::mc::PIF_RAM_START;
-use n64::mc::PIF_RAM_END;
+use n64::PIF_RAM_START;
+use n64::PIF_RAM_END;
 
 const SI_REG_DRAM_ADDR: u32 = 0x0480_0000;
 const SI_REG_PIF_ADDR_RD64B: u32 = 0x0480_0004;

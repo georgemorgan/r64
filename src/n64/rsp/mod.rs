@@ -1,7 +1,7 @@
-use n64::mc::SP_DMEM_START;
-use n64::mc::SP_DMEM_END;
-use n64::mc::SP_IMEM_START;
-use n64::mc::SP_IMEM_END;
+use n64::SP_DMEM_START;
+use n64::SP_DMEM_END;
+use n64::SP_IMEM_START;
+use n64::SP_IMEM_END;
 
 /* LO registers */
 const SP_REG_MEM_ADDR: u32 = 0x0404_0000;

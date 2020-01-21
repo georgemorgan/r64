@@ -44,7 +44,7 @@ const GPR_SIZE: usize = 32;
 pub struct VR4300 {
 
     /* 5 stage pipeline */
-    pl: Pl,
+    pub pl: Pl,
 
     /* mmu / tlb co-processor */
     pub cp0: CP0,
@@ -92,14 +92,6 @@ impl VR4300 {
                 self.gpr[reg] = val;
             },
         }
-    }
-
-    pub fn cycle(&mut self, mc: &mut MC) {
-        self.pl.ic(mc);
-        self.pl.rf();
-        self.pl.ex();
-        self.pl.dc(mc);
-        self.pl.wb(mc);
     }
 }
 

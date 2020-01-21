@@ -105,40 +105,40 @@ impl Pl {
     }
 
     /* IC - Instruction Cache Fetch */
-    pub fn ic(&mut self, mc: &MC) {
+    pub fn ic(&mut self, n64: &mut N64) {
 
         /* if there is a branch waiting in the delay slot, we need to update the PC here */
         if self.ds_pc != 0 {
-            cpu.pc = self.ds_pc;
+            n64.cpu.pc = self.ds_pc;
             self.ds_pc = 0;
         }
 
-        let val = mc.read((cpu.pc) as u32);
+        let val = n64.read((n64.cpu.pc) as u32);
         self.ic.op = Inst(val);
 
         println!("IC {}", self.ic.op);
 
-        cpu.pc += 4;
+        n64.cpu.pc += 4;
     }
 
     /* RF - Register Fetch */
-    pub fn rf(&mut self) {
+    pub fn rf(&mut self, n64: &N64) {
 
         println!("RF {}", self.ic.op);
 
         match self.ic.op.class() {
             OpC::C => {
-                self.rf.rs = cpu.cp0.rgpr(self.ic.op._rd()) as u64
+                self.rf.rs = n64.cpu.cp0.rgpr(self.ic.op._rd()) as u64
             }, _ => {
-                self.rf.rs = cpu.rgpr(self.ic.op._rs());
+                self.rf.rs = n64.cpu.rgpr(self.ic.op._rs());
             }
         }
 
-        self.rf.rt = cpu.rgpr(self.ic.op._rt());
+        self.rf.rt = n64.cpu.rgpr(self.ic.op._rt());
     }
 
     /* EX - Execution */
-    pub fn ex(&mut self) {
+    pub fn ex(&mut self, n64: &N64) {
 
         println!("EX {}", self.ic.op);
 
@@ -173,19 +173,19 @@ impl Pl {
                     }, OpC::C => {
 
                     }, OpC::B => {
-                        self.ic.op.ex()(&mut self);
+                        self.ic.op.ex()(self);
 
                         /* if a branch will occur, set the delay slot program counter */
                         if self.ex.br {
                             let offset = ((self.ic.op.offset() as i16 as i32) << 2) as i64;
-                            self.ds_pc = (cpu.pc as i64 + offset) as u64;
+                            self.ds_pc = (n64.cpu.pc as i64 + offset) as u64;
                         }
 
                     }, OpC::J => {
 
 
                     }, _ => {
-                        self.ic.op.ex()(&mut self);
+                        self.ic.op.ex()(self);
                     }
                 }
             }
@@ -193,7 +193,7 @@ impl Pl {
     }
 
     /* DC - Data Cache Fetch */
-    pub fn dc(&mut self, mc: &MC) {
+    pub fn dc(&mut self, n64: &N64) {
 
         println!("DC {}", self.ic.op);
 
@@ -201,9 +201,9 @@ impl Pl {
             OpC::L => {
                 let base = self.rf.rs as i64;
                 let offset = self.ic.op.offset() as i16 as i64;
-                self.dc.dc = mc.read((base + offset) as u32) as u64;
+                self.dc.dc = n64.read((base + offset) as u32) as u64;
                 /* need to call the ex function as a hack to get ol populated */
-                self.ic.op.ex()(&mut self);
+                self.ic.op.ex()(self);
             }, _ => {
 
             }
@@ -212,7 +212,7 @@ impl Pl {
     }
 
     /* WB - Write Back */
-    pub fn wb(&mut self, mc: &mut MC) {
+    pub fn wb(&mut self, n64: &mut N64) {
 
         println!("WB {}", self.ic.op);
 
@@ -222,23 +222,23 @@ impl Pl {
 
             OpC::I | OpC::L => {
                 /* I and L instructions write back to the rt register */
-                cpu.wgpr(self.ex.ol, self.ic.op._rt());
+                n64.cpu.wgpr(self.ex.ol, self.ic.op._rt());
             }, OpC::S => {
                 /* S instructions write back to memory */
                 let base = self.rf.rs as i64;
                 let offset = self.ic.op.offset() as i16 as i64;
-                mc.write((base + offset) as u64 as u32, self.ex.ol as u32);
+                n64.write((base + offset) as u64 as u32, self.ex.ol as u32);
             }, OpC::J | OpC::B => {
                 /* J and B instructions wrote to the delay slot program counter and link register */
                 if self.ex.wlr {
-                    cpu.wgpr(cpu.pc + 4, 31);
+                    n64.cpu.wgpr(n64.cpu.pc + 4, 31);
                 }
             }, OpC::R => {
                 /* write back to rd */
-                cpu.wgpr(self.ex.ol, self.ic.op._rd());
+                n64.cpu.wgpr(self.ex.ol, self.ic.op._rd());
             }, OpC::C => {
                 /* write back to rt on the coprocessor */
-                cpu.cp0.wgpr(self.ex.ol as u32, self.ic.op._rt());
+                n64.cpu.cp0.wgpr(self.ex.ol as u32, self.ic.op._rt());
             }
         }
 

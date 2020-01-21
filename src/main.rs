@@ -76,11 +76,11 @@ fn main() {
                         break 'main_loop;
                     }, "go" | "g" => {
                         loop {
-                            n64.cycle();
+                            n64.step();
                             //println!("{:?}", n64.cpu);
                         }
                     }, "step" | "s" | _ => {
-                        n64.cycle();
+                        n64.step();
                     },
                 }
             },
