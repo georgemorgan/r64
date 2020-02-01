@@ -1,6 +1,6 @@
 /* op.p.rf.rs - Exposes all of the possible VR4300i opcodes and their implementations. */
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum OpC {
     /* immediate instruction (i-type) */
     I,

@@ -35,8 +35,6 @@ use self::op::*;
 use self::instruction::*;
 
 use crate::N64;
-use crate::Read;
-use crate::Write;
 
 // Implementation of the VR4300 pipeline
 // Does the emulator need to emulate the pipeline?
@@ -52,27 +50,26 @@ use crate::Write;
 // way that is naturally compliant with Rust's borrow checker.
 
 #[derive(Copy, Clone)]
-pub enum PlStage {
-    IC = 0,
-    RF = 1,
-    EX = 2,
-    DC = 3,
-    WB = 4
-}
-
-#[derive(Copy, Clone)]
 pub struct Ic {
     pub op: Inst
 }
 
-#[derive(Copy, Clone)]
+impl fmt::Debug for Ic {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.op)?;
+        Ok(())
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub struct Rf {
     /* RF stage */
     pub rt: u64,
     pub rs: u64
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Ex {
     /* EX stage */
     pub stalled: bool,
@@ -81,19 +78,17 @@ pub struct Ex {
     pub wlr: bool
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Dc {
     pub dc: u64
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Wb {
 
 }
 
 pub struct Pl {
-    /* pipeline cycle */
-    pcycle: usize,
     /* delay slot program counter */
     ds_pc: u64,
 
@@ -132,8 +127,6 @@ impl VR4300 {
         VR4300 {
 
             pl: Pl {
-                pcycle: 0,
-
                 ds_pc: 0,
 
                 /* IC stage */
@@ -194,7 +187,7 @@ impl VR4300 {
     }
 
     /* IC - Instruction Cache Fetch */
-    pub fn ic(&mut self, l: &dyn Fn(u32) -> u32) {
+    pub fn ic<F>(&mut self, rmem: F) where F: Fn(u32) -> u32 {
 
         /* if there is a branch waiting in the delay slot, we need to update the PC here */
         if self.pl.ds_pc != 0 {
@@ -202,19 +195,16 @@ impl VR4300 {
             self.pl.ds_pc = 0;
         }
 
-        let val = l((self.pc) as u32);
+        let val = rmem((self.pc) as u32);
         self.pl.ic.op = Inst(val);
 
-        println!("IC {}", self.pl.ic.op);
+        println!("{:#?}\n", self.pl.ic);
 
         self.pc += 4;
     }
 
     /* RF - Register Fetch */
     pub fn rf(&mut self) {
-
-        println!("RF {}", self.pl.ic.op);
-
         match self.pl.ic.op.class() {
             OpC::C => {
                 self.pl.rf.rs = self.cp0.rgpr(self.pl.ic.op._rd()) as u64
@@ -224,36 +214,37 @@ impl VR4300 {
         }
 
         self.pl.rf.rt = self.rgpr(self.pl.ic.op._rt());
+
+        println!("{:#?}\n", self.pl.rf);
     }
 
     /* EX - Execution */
     pub fn ex(&mut self) {
+        // /* stall if the register is the dest of the RF instruction */
+        // match self.pl.ic.op.class() {
+        //
+        //     OpC::I | OpC::L => {
+        //         if self.pl.ic.op._rs() == self.pl.ic.op._rt() || self.pl.ic.op._rt() == self.pl.ic.op._rt() {
+        //             self.pl.ex.stalled = true;
+        //             return;
+        //         }
+        //     }, OpC::R => {
+        //         if self.pl.ic.op._rs() == self.pl.ic.op._rd() || self.pl.ic.op._rt() == self.pl.ic.op._rd() {
+        //             self.pl.ex.stalled = true;
+        //             return;
+        //         }
+        //     } _=> {
+        // 
+        //     }
+        // }
 
-        println!("EX {}", self.pl.ic.op);
-
-        /* stall if the register is the dest of the RF instruction */
-        match self.pl.ic.op.class() {
-
-            OpC::I | OpC::L => {
-                if self.pl.ic.op._rs() == self.pl.ic.op._rt() || self.pl.ic.op._rt() == self.pl.ic.op._rt() {
-                    self.pl.ex.stalled = true;
-                    return;
-                }
-            }, OpC::R => {
-                if self.pl.ic.op._rs() == self.pl.ic.op._rd() || self.pl.ic.op._rt() == self.pl.ic.op._rd() {
-                    self.pl.ex.stalled = true;
-                    return;
-                }
-            } _=> {
-
-            }
-        }
+        println!("CLASS: {:?}", self.pl.ic.op.class());
 
         match self.pl.ic.op.op() {
             Op::Syscall => {
                 if self.pl.ic.op.sa() > 0 {
                     let result = if self.pl.ic.op._rt() == 16 { "Pass" }  else { "Fail" };
-                    println!("Test Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", self.pl.ic.op._rs(), self.pl.ic.op._rd(), self.pl.ic.op.sa(), result);
+                    println!("t #Result - ISA:{:X}  Set:{:X}  Test:{:X}  Result:{:?}", self.pl.ic.op._rs(), self.pl.ic.op._rd(), self.pl.ic.op.sa(), result);
                 }
             }, _ => {
                 match self.pl.ic.op.class() {
@@ -279,18 +270,18 @@ impl VR4300 {
                 }
             }
         }
+
+        println!("{:#?}\n", self.pl.ex);
     }
 
     /* DC - Data Cache Fetch */
-    pub fn dc(&mut self, n64: &N64) {
-
-        println!("DC {}", self.pl.ic.op);
+    pub fn dc<F>(&mut self, rmem: F) where F: Fn(u32) -> u32 {
 
         match self.pl.ic.op.class() {
             OpC::L => {
                 let base = self.pl.rf.rs as i64;
                 let offset = self.pl.ic.op.offset() as i16 as i64;
-                self.pl.dc.dc = n64.read((base + offset) as u32) as u64;
+                self.pl.dc.dc = rmem((base + offset) as u32) as u64;
                 /* need to call the ex function as a hack to get ol populated */
                 self.pl.ic.op.ex()(&mut self.pl);
             }, _ => {
@@ -298,12 +289,11 @@ impl VR4300 {
             }
         }
 
+        println!("{:#?}\n", self.pl.dc);
     }
 
     /* WB - Write Back */
-    pub fn wb(&mut self, n64: &mut N64) {
-
-        println!("WB {}", self.pl.ic.op);
+    pub fn wb<F>(&mut self, mut wmem: F) where F: FnMut(u32, u32) {
 
         match self.pl.ic.op.class() {
 
@@ -316,7 +306,7 @@ impl VR4300 {
                 /* S instructions write back to memory */
                 let base = self.pl.rf.rs as i64;
                 let offset = self.pl.ic.op.offset() as i16 as i64;
-                n64.write((base + offset) as u64 as u32, self.pl.ex.ol as u32);
+                wmem((base + offset) as u64 as u32, self.pl.ex.ol as u32);
             }, OpC::J | OpC::B => {
                 /* J and B instructions wrote to the delay slot program counter and link register */
                 if self.pl.ex.wlr {
@@ -335,6 +325,7 @@ impl VR4300 {
             self.pl.ex.stalled = false;
         }
 
+        println!("{:#?}\n", self.pl.wb);
     }
 }
 

@@ -35,16 +35,25 @@ impl N64 {
     }
 
     pub fn step(&mut self) {
-        let cart = &self.cart;
-        let rdram = &self.rdram;
-        let rcp = &self.rcp;
-        let pif = &self.pif;
+        let cart = &mut self.cart;
+        let rdram = &mut self.rdram;
+        let rcp = &mut self.rcp;
+        let pif = &mut self.pif;
 
-        let l = |addr| {
+        let r = |addr| {
             mc::read(addr, cart, rdram, rcp, pif)
         };
 
-        self.cpu.ic(&l);
+        self.cpu.ic(r);
+        self.cpu.rf();
+        self.cpu.ex();
+        self.cpu.dc(r);
+
+        let w = |addr, val| {
+            mc::write(addr, val, rdram, rcp, pif)
+        };
+
+        self.cpu.wb(w);
     }
 }
 
