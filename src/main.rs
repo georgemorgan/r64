@@ -8,13 +8,28 @@ use std::io::Read;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-/* Use the N64 module. */
-mod n64;
+use std::str;
+
+extern crate n64;
 use n64::N64;
-use n64::N64_ROM_HEADER;
 use n64::N64_ROM_HEADER_SIZE;
 
-use std::str;
+#[repr(C, packed)]
+pub struct N64_ROM_HEADER {
+    pub pi_bsd_dom1: u32,
+    pub clock: u32,
+    pub pc: u32,
+    pub release: u32,
+    pub crc1: u32,
+    pub crc2: u32,
+    pub unknown1: u64,
+    pub name: [u8; 20],
+    pub unknown2: u32,
+    pub format: u32,
+    pub id: u16,
+    pub country: u8,
+    pub version: u8
+}
 
 /* 'main()' function; loads N64 ROM and initializes emulator context. */
 fn main() {
@@ -57,10 +72,6 @@ fn main() {
 
     /* Create the N64. */
     let mut n64 = N64::new(crom, prom);
-
-    // loop {
-    //     n64.cycle();
-    // }
 
     let mut rl = Editor::<()>::new();
     'main_loop: loop {

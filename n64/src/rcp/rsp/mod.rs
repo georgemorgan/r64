@@ -1,7 +1,7 @@
-use n64::SP_DMEM_START;
-use n64::SP_DMEM_END;
-use n64::SP_IMEM_START;
-use n64::SP_IMEM_END;
+use crate::mc::SP_DMEM_START;
+use crate::mc::SP_DMEM_END;
+use crate::mc::SP_IMEM_START;
+use crate::mc::SP_IMEM_END;
 
 /* LO registers */
 const SP_REG_MEM_ADDR: u32 = 0x0404_0000;
@@ -133,9 +133,9 @@ impl RSP {
     pub fn new() -> RSP {
         RSP {
             /* Allocate the DMEM. */
-            dmem: vec![0; (SP_DMEM_END - SP_DMEM_START) as usize].into_boxed_slice(),
+            dmem: Box::new([0; (SP_DMEM_END - SP_DMEM_START) as usize]),
             /* Allocate the IMEM. */
-            imem: vec![0;  (SP_IMEM_END - SP_IMEM_START) as usize].into_boxed_slice(),
+            imem: Box::new([0;  (SP_IMEM_END - SP_IMEM_START) as usize]),
 
             mem_addr: 0,
             dram_addr: 0,

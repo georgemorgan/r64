@@ -1,5 +1,5 @@
-use n64::PIF_RAM_START;
-use n64::PIF_RAM_END;
+use crate::mc::PIF_RAM_START;
+use crate::mc::PIF_RAM_END;
 
 const SI_REG_DRAM_ADDR: u32 = 0x0480_0000;
 const SI_REG_PIF_ADDR_RD64B: u32 = 0x0480_0004;
@@ -24,7 +24,7 @@ impl PIF {
     pub fn new(pr: Box<[u8]>) -> PIF {
         PIF {
             /* Allocate the PRAM. */
-            pram: vec![0; (PIF_RAM_END - PIF_RAM_START + 1) as usize].into_boxed_slice(),
+            pram: Box::new([0; (PIF_RAM_END - PIF_RAM_START + 1) as usize]),
             /* Transfer ownership of the PROM. */
             prom: pr,
 
